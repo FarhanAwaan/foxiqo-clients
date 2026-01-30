@@ -1,0 +1,284 @@
+/**
+ * Custom Styles for Foxiqo Clients Portal
+ * Built on top of Tabler UI
+ */
+
+/* ============================================
+   Layout Adjustments
+   ============================================ */
+
+/* Ensure consistent spacing */
+.page-body {
+    margin-top: 1rem;
+}
+
+/* Card improvements */
+.card {
+    margin-bottom: 1.5rem;
+}
+
+.card-table {
+    margin-bottom: 0;
+}
+
+/* ============================================
+   Status Badges
+   ============================================ */
+
+.badge-status-active {
+    background-color: #2fb344;
+    color: #fff;
+}
+
+.badge-status-pending {
+    background-color: #f59f00;
+    color: #fff;
+}
+
+.badge-status-expired {
+    background-color: #d63939;
+    color: #fff;
+}
+
+.badge-status-cancelled {
+    background-color: #626976;
+    color: #fff;
+}
+
+.badge-status-suspended {
+    background-color: #d63939;
+    color: #fff;
+}
+
+.badge-status-inactive {
+    background-color: #626976;
+    color: #fff;
+}
+
+/* Invoice Status Badges */
+.badge-invoice-draft {
+    background-color: #626976;
+    color: #fff;
+}
+
+.badge-invoice-sent {
+    background-color: #206bc4;
+    color: #fff;
+}
+
+.badge-invoice-paid {
+    background-color: #2fb344;
+    color: #fff;
+}
+
+.badge-invoice-overdue {
+    background-color: #d63939;
+    color: #fff;
+}
+
+/* ============================================
+   Stats Cards
+   ============================================ */
+
+.stat-card {
+    border-left: 3px solid transparent;
+}
+
+.stat-card.stat-primary {
+    border-left-color: #206bc4;
+}
+
+.stat-card.stat-success {
+    border-left-color: #2fb344;
+}
+
+.stat-card.stat-warning {
+    border-left-color: #f59f00;
+}
+
+.stat-card.stat-danger {
+    border-left-color: #d63939;
+}
+
+.stat-card .stat-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.stat-card .stat-label {
+    font-size: 0.875rem;
+    color: #626976;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ============================================
+   Table Improvements
+   ============================================ */
+
+.table-actions {
+    white-space: nowrap;
+}
+
+.table-actions .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Clickable table rows */
+.table-hover-clickable tbody tr {
+    cursor: pointer;
+}
+
+.table-hover-clickable tbody tr:hover {
+    background-color: rgba(32, 107, 196, 0.04);
+}
+
+/* ============================================
+   Form Improvements
+   ============================================ */
+
+.form-label-required::after {
+    content: " *";
+    color: #d63939;
+}
+
+.form-hint {
+    font-size: 0.75rem;
+    color: #626976;
+    margin-top: 0.25rem;
+}
+
+/* ============================================
+   Modal Improvements
+   ============================================ */
+
+.modal-confirm .modal-body {
+    text-align: center;
+    padding: 2rem;
+}
+
+.modal-confirm .modal-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* ============================================
+   Empty States
+   ============================================ */
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    color: #626976;
+    margin-bottom: 1rem;
+}
+
+.empty-state-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+    color: #626976;
+    margin-bottom: 1.5rem;
+}
+
+/* ============================================
+   Progress Indicators
+   ============================================ */
+
+.usage-bar {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e6e7e9;
+    overflow: hidden;
+}
+
+.usage-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.usage-bar-fill.usage-normal {
+    background-color: #2fb344;
+}
+
+.usage-bar-fill.usage-warning {
+    background-color: #f59f00;
+}
+
+.usage-bar-fill.usage-danger {
+    background-color: #d63939;
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.min-w-0 {
+    min-width: 0;
+}
+
+/* Money formatting */
+.text-money {
+    font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   Loading States
+   ============================================ */
+
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.5rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 768px) {
+    .page-header .row {
+        flex-direction: column;
+    }
+
+    .page-header .col-auto.ms-auto {
+        margin-left: 0 !important;
+        margin-top: 1rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.5rem;
+    }
+}
