@@ -6,6 +6,59 @@
 /* ============================================
    Layout Adjustments
    ============================================ */
+:root {
+    --tblr-primary: #F96900;
+    --tblr-primary-rgb: 249, 105, 0;
+    --tblr-primary-darken: #E05E00;
+    --tblr-primary-lighten: #FF8533;
+    --tblr-link-color: #F96900;
+    --tblr-link-hover-color: #E05E00;
+    --tblr-success: #10B981;
+    --tblr-warning: #F59E0B;
+    --tblr-danger: #EF4444;
+}
+
+body {
+    /* background-color: var(--tblr-body-bg) !important; */
+}
+
+.navbar-brand-image {
+    height: 32px;
+    width: auto;
+}
+
+/* Modern menu styling */
+.navbar-nav .nav-link {
+    font-weight: 500;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.navbar-nav .nav-link.active {
+    color: var(--tblr-primary) !important;
+}
+
+.navbar-nav .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--tblr-primary);
+}
+
+/* Page wrapper adjustments */
+.page-wrapper {
+    padding-top: 0;
+}
+/* Enhanced table styling */
+.table tbody tr:hover { background-color: rgba(249, 105, 0, 0.05); }
+.badge-status { padding: 4px 8px; border-radius: 4px; }
+
+/* Card improvements */
+.card { box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.card-header { border-bottom: 1px solid #e9ecef; }
 
 /* Ensure consistent spacing */
 .page-body {
@@ -62,7 +115,7 @@
 }
 
 .badge-invoice-sent {
-    background-color: #206bc4;
+    background-color: var(--tblr-primary);
     color: #fff;
 }
 
@@ -85,7 +138,7 @@
 }
 
 .stat-card.stat-primary {
-    border-left-color: #206bc4;
+    border-left-color: var(--tblr-primary);
 }
 
 .stat-card.stat-success {
@@ -131,7 +184,7 @@
 }
 
 .table-hover-clickable tbody tr:hover {
-    background-color: rgba(32, 107, 196, 0.04);
+    background-color: rgba(249, 105, 0, 0.04);
 }
 
 /* ============================================
@@ -281,4 +334,368 @@
     .stat-card .stat-value {
         font-size: 1.5rem;
     }
+}
+
+
+/* ============================================
+   Primary Color Overrides
+   ============================================ */
+
+/* Primary button */
+.btn-primary {
+    --tblr-btn-bg: var(--tblr-primary);
+    --tblr-btn-border-color: var(--tblr-primary);
+    --tblr-btn-hover-bg: var(--tblr-primary-darken);
+    --tblr-btn-hover-border-color: var(--tblr-primary-darken);
+    --tblr-btn-active-bg: var(--tblr-primary-darken);
+    --tblr-btn-active-border-color: var(--tblr-primary-darken);
+}
+
+/* Primary outline button */
+.btn-outline-primary {
+    --tblr-btn-color: var(--tblr-primary);
+    --tblr-btn-border-color: var(--tblr-primary);
+    --tblr-btn-hover-bg: var(--tblr-primary);
+    --tblr-btn-hover-border-color: var(--tblr-primary);
+    --tblr-btn-active-bg: var(--tblr-primary);
+    --tblr-btn-active-border-color: var(--tblr-primary);
+}
+
+/* Ghost primary button */
+.btn-ghost-primary {
+    --tblr-btn-color: var(--tblr-primary);
+    --tblr-btn-hover-bg: rgba(249, 105, 0, 0.1);
+    --tblr-btn-hover-color: var(--tblr-primary);
+}
+
+/* Links */
+a {
+    color: var(--tblr-primary);
+}
+a:hover {
+    color: var(--tblr-primary-darken);
+}
+
+/* Form focus states */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--tblr-primary);
+    box-shadow: 0 0 0 0.25rem rgba(249, 105, 0, 0.25);
+}
+
+/* Form check/radio primary */
+.form-check-input:checked {
+    background-color: var(--tblr-primary);
+    border-color: var(--tblr-primary);
+}
+
+/* Nav links active */
+.nav-link.active,
+.nav-pills .nav-link.active {
+    color: var(--tblr-primary);
+}
+
+/* Pagination active */
+.page-item.active .page-link {
+    background-color: var(--tblr-primary);
+    border-color: var(--tblr-primary);
+}
+
+/* Progress bar */
+.progress-bar {
+    background-color: var(--tblr-primary);
+}
+
+/* Spinner primary */
+.spinner-border.text-primary {
+    color: var(--tblr-primary) !important;
+}
+
+/* Badge primary */
+.badge.bg-primary {
+    background-color: var(--tblr-primary) !important;
+}
+
+/* Text primary */
+.text-primary {
+    color: var(--tblr-primary) !important;
+}
+
+/* Background primary light */
+.bg-primary-lt {
+    background-color: rgba(249, 105, 0, 0.1) !important;
+    color: var(--tblr-primary) !important;
+}
+
+/* Border primary */
+.border-primary {
+    border-color: var(--tblr-primary) !important;
+}
+
+/* Avatar primary light */
+.avatar.bg-primary-lt {
+    background-color: rgba(249, 105, 0, 0.1);
+    color: var(--tblr-primary);
+}
+
+/* Dropdown item active */
+.dropdown-item.active,
+.dropdown-item:active {
+    background-color: var(--tblr-primary);
+}
+
+/* Alert primary */
+.alert-primary {
+    background-color: rgba(249, 105, 0, 0.1);
+    border-color: rgba(249, 105, 0, 0.2);
+    color: var(--tblr-primary-darken);
+}
+
+/* ============================================
+   Sidebar adjustments for primary color
+   ============================================ */
+.navbar-vertical .nav-link.active {
+    color: var(--tblr-primary) !important;
+}
+
+.navbar-vertical[data-bs-theme="dark"] .nav-link.active {
+    background-color: rgba(249, 105, 0, 0.15);
+}
+
+/* ============================================
+   Dropdown fixes - ensure visibility over tables
+   ============================================ */
+
+/* Fix dropdown in table-responsive containers */
+.table-responsive {
+    overflow: visible !important;
+}
+
+.card .table-responsive {
+    overflow: visible !important;
+}
+
+/* Ensure dropdowns have proper z-index */
+.dropdown-menu {
+    z-index: 1050;
+}
+
+/* Fix for action column dropdowns */
+.table td .dropdown {
+    position: static;
+}
+
+.table td .dropdown-menu {
+    position: absolute;
+}
+
+/* ============================================
+   Dropdown hover enhancements
+   ============================================ */
+.dropdown-item {
+    transition: all 0.15s ease;
+    border-radius: 4px;
+    margin: 2px 8px;
+    padding: 8px 12px;
+    width: calc(100% - 16px);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: rgba(249, 105, 0, 0.1);
+    color: var(--tblr-primary);
+}
+
+.dropdown-item:hover .icon,
+.dropdown-item:focus .icon {
+    color: var(--tblr-primary);
+}
+
+.dropdown-item.text-danger:hover,
+.dropdown-item.text-danger:focus {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #dc3545;
+}
+
+.dropdown-item.text-danger:hover .icon,
+.dropdown-item.text-danger:focus .icon {
+    color: #dc3545;
+}
+
+.dropdown-menu {
+    padding: 8px 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+}
+
+.dropdown-divider {
+    margin: 8px 0;
+}
+
+/* ============================================
+   Table full width fix
+   ============================================ */
+.card-table {
+    width: 100%;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+/* ============================================
+   Header right alignment fix
+   ============================================ */
+.page-wrapper > .navbar {
+    justify-content: flex-end;
+}
+
+.page-wrapper > .navbar .container-xl {
+    justify-content: flex-end;
+}
+
+/* ============================================
+   Agent Cards
+   ============================================ */
+.agent-card {
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.agent-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border-color: var(--tblr-primary);
+}
+
+.agent-stat {
+    padding: 8px;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.agent-stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--tblr-body-color);
+}
+
+.agent-stat-label {
+    font-size: 0.7rem;
+    color: #626976;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+/* ============================================
+   Transcript Styles
+   ============================================ */
+.transcript-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e6e7e9;
+    border-radius: 8px;
+    padding: 12px;
+    background-color: #fafafa;
+}
+
+.transcript-item {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    max-width: 85%;
+}
+
+.transcript-item:last-child {
+    margin-bottom: 0;
+}
+
+.transcript-agent {
+    background-color: rgba(249, 105, 0, 0.1);
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+
+.transcript-user {
+    background-color: #fff;
+    border: 1px solid #e6e7e9;
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+
+.transcript-role {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    color: #626976;
+}
+
+.transcript-agent .transcript-role {
+    color: var(--tblr-primary);
+}
+
+.transcript-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--tblr-body-color);
+}
+
+/* ============================================
+   Offcanvas Improvements
+   ============================================ */
+.offcanvas {
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.offcanvas-header {
+    border-bottom: 1px solid #e6e7e9;
+    padding: 1rem 1.5rem;
+}
+
+.offcanvas-title {
+    font-weight: 600;
+}
+
+.offcanvas-body {
+    padding: 1.5rem;
+}
+
+/* Datagrid items in offcanvas */
+.offcanvas .datagrid-item {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.offcanvas .datagrid-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* ============================================
+   View call button hover
+   ============================================ */
+.btn-ghost-primary:hover {
+    background-color: rgba(249, 105, 0, 0.1);
+    color: var(--tblr-primary);
+}
+
+/* ============================================
+   Alert small variant
+   ============================================ */
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.alert-sm .alert-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
 }

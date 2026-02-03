@@ -52,7 +52,13 @@ class UserController extends Controller
     {
         $companies = Company::where('status', 'active')->orderBy('name')->get();
 
-        return view('admin.users.create', compact('companies'));
+        $selectedCompanyId = null;
+        if (request('company_id')) {
+            $selectedCompany = Company::where('uuid', request('company_id'))->first();
+            $selectedCompanyId = $selectedCompany?->id;
+        }
+
+        return view('admin.users.create', compact('companies', 'selectedCompanyId'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -84,14 +90,29 @@ class UserController extends Controller
     {
         $user->load('company');
 
-        return view('admin.users.show', compact('user'));
+        $companyInvoices = collect();
+        $companyAgents = collect();
+
+        if ($user->company) {
+            $companyInvoices = $user->company->invoices()
+                ->latest()
+                ->take(10)
+                ->get();
+
+            $companyAgents = $user->company->agents()
+                ->with(['subscription.plan'])
+                ->get();
+        }
+
+        return view('admin.users.show', compact('user', 'companyInvoices', 'companyAgents'));
     }
 
     public function edit(User $user): View
     {
         $companies = Company::where('status', 'active')->orderBy('name')->get();
+        $selectedCompanyId = $user->company_id;
 
-        return view('admin.users.edit', compact('user', 'companies'));
+        return view('admin.users.edit', compact('user', 'companies', 'selectedCompanyId'));
     }
 
     public function update(Request $request, User $user): RedirectResponse

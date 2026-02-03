@@ -69,11 +69,11 @@ class CompanyController extends Controller
 
     public function show(Company $company): View
     {
-        $company->load(['users', 'agents.subscription.plan', 'invoices' => function ($q) {
-            $q->latest()->take(5);
-        }]);
+        $company->load(['users', 'agents.subscription.plan']);
 
-        return view('admin.companies.show', compact('company'));
+        $recentInvoices = $company->invoices()->latest()->take(5)->get();
+
+        return view('admin.companies.show', compact('company', 'recentInvoices'));
     }
 
     public function edit(Company $company): View

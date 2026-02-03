@@ -13,8 +13,22 @@ use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\Customer\AgentController as CustomerAgentController;
-use App\Http\Controllers\Customer\CallLogController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Root Route
+|--------------------------------------------------------------------------
+*/
+Route::get('/', function () {
+    if (auth()->check()) {
+        return auth()->user()->isAdmin()
+            ? redirect()->route('admin.dashboard')
+            : redirect()->route('customer.dashboard');
+    }
+    return redirect()->route('login');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +43,17 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
+/*
+|--------------------------------------------------------------------------
+| Profile Routes (Shared between Admin and Customer)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->prefix('profile')->name('profile.')->group(function () {
+    Route::get('/', [ProfileController::class, 'index'])->name('index');
+    Route::put('/update', [ProfileController::class, 'update'])->name('update');
+    Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +72,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
 
     // Agent Management
     Route::resource('agents', AdminAgentController::class);
+    Route::get('agents/{agent}/calls/{callLog}', [AdminAgentController::class, 'callDetails'])->name('agents.calls.details');
 
     // Plan Management
     Route::resource('plans', PlanController::class);
@@ -78,6 +104,5 @@ Route::prefix('customer')->middleware(['auth', 'customer'])->name('customer.')->
     Route::get('/', [CustomerDashboardController::class, 'index'])->name('dashboard');
     Route::get('agents', [CustomerAgentController::class, 'index'])->name('agents.index');
     Route::get('agents/{agent}', [CustomerAgentController::class, 'show'])->name('agents.show');
-    Route::get('agents/{agent}/calls', [CallLogController::class, 'index'])->name('agents.calls');
-    Route::get('calls/{callLog}', [CallLogController::class, 'show'])->name('calls.show');
+    Route::get('agents/{agent}/calls/{callLog}', [CustomerAgentController::class, 'callDetails'])->name('agents.calls.details');
 });

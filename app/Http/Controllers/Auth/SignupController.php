@@ -14,7 +14,8 @@ class SignupController extends Controller
 {
     public function showForm(string $token): View|RedirectResponse
     {
-        $user = User::where('signup_token', $token)
+        $user = User::with('company')
+            ->where('signup_token', $token)
             ->where('signup_token_expires_at', '>', now())
             ->first();
 
@@ -51,7 +52,9 @@ class SignupController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('customer.dashboard')
+        $redirectRoute = $user->isAdmin() ? 'admin.dashboard' : 'customer.dashboard';
+
+        return redirect()->route($redirectRoute)
             ->with('success', 'Welcome! Your account has been activated.');
     }
 }

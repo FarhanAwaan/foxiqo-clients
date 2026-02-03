@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Models\CallLog;
 use App\Models\Company;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 
 class AgentController extends Controller
 {
@@ -18,7 +20,9 @@ class AgentController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Agent::with(['company', 'subscription.plan']);
+        $query = Agent::with(['company', 'subscription.plan'])
+            ->withCount('callLogs')
+            ->withSum('callLogs', 'duration_minutes');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -37,7 +41,7 @@ class AgentController extends Controller
             $query->where('status', $request->status);
         }
 
-        $agents = $query->latest()->paginate(15)->withQueryString();
+        $agents = $query->latest()->paginate(12)->withQueryString();
         $companies = Company::orderBy('name')->get();
 
         return view('admin.agents.index', compact('agents', 'companies'));
@@ -69,13 +73,49 @@ class AgentController extends Controller
             ->with('success', 'Agent created successfully.');
     }
 
-    public function show(Agent $agent): View
+    public function show(Agent $agent, Request $request): View
     {
-        $agent->load(['company', 'subscription.plan', 'callLogs' => function ($q) {
-            $q->latest()->take(10);
-        }]);
+        $agent->load(['company', 'subscription.plan']);
 
-        return view('admin.agents.show', compact('agent'));
+        // Get call logs with pagination
+        $callLogs = $agent->callLogs()
+            ->orderBy('started_at', 'asc')
+            ->paginate(15)
+            ->withQueryString();
+
+        // Calculate stats
+        $totalCalls = $agent->callLogs()->count();
+        $totalMinutes = $agent->callLogs()->sum('duration_minutes');
+        $avgDuration = $totalCalls > 0 ? $agent->callLogs()->avg('duration_seconds') : 0;
+
+        return view('admin.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration'));
+    }
+
+    public function callDetails(Agent $agent, CallLog $callLog): JsonResponse
+    {
+        if ($callLog->agent_id !== $agent->id) {
+            return response()->json(['error' => 'Call not found'], 404);
+        }
+
+        return response()->json([
+            'id' => $callLog->id,
+            'uuid' => $callLog->uuid,
+            'call_status' => $callLog->call_status,
+            'direction' => $callLog->direction,
+            'from_number' => $callLog->from_number,
+            'to_number' => $callLog->to_number,
+            'started_at' => $callLog->started_at?->format('M d, Y h:i A'),
+            'ended_at' => $callLog->ended_at?->format('M d, Y h:i A'),
+            'duration_formatted' => $callLog->duration_formatted,
+            'duration_seconds' => $callLog->duration_seconds,
+            'duration_minutes' => $callLog->duration_minutes,
+            'retell_cost' => $callLog->retell_cost,
+            'sentiment' => $callLog->sentiment,
+            'summary' => $callLog->summary,
+            'transcript' => $callLog->transcript_array,
+            'recording_url' => $callLog->recording_url,
+            'retell_call_id' => $callLog->retell_call_id,
+        ]);
     }
 
     public function edit(Agent $agent): View

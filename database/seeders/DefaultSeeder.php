@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use App\Models\Plan;
 use App\Models\SystemSetting;
 use App\Models\User;
@@ -26,6 +27,36 @@ class DefaultSeeder extends Seeder
             'last_name' => 'Admin',
             'password' => Hash::make('password'),
             'role' => 'admin',
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        // Create sample company
+        $company = Company::firstOrCreate([
+            'email' => 'demo@acmecorp.com',
+        ], [
+            'uuid' => Str::uuid(),
+            'name' => 'Acme Corporation',
+            'billing_email' => 'billing@acmecorp.com',
+            'phone' => '+1 (555) 123-4567',
+            'address' => '123 Business Ave',
+            'city' => 'San Francisco',
+            'state' => 'CA',
+            'postal_code' => '94102',
+            'country' => 'United States',
+            'status' => 'active',
+        ]);
+
+        // Create sample customer user (active)
+        User::firstOrCreate([
+            'email' => 'john@acmecorp.com',
+        ], [
+            'uuid' => Str::uuid(),
+            'company_id' => $company->id,
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'password' => Hash::make('password'),
+            'role' => 'customer',
             'status' => 'active',
             'email_verified_at' => now(),
         ]);
