@@ -86,16 +86,16 @@
                     <div class="card-actions">
                         @switch($subscription->status)
                             @case('active')
-                                <span class="badge bg-success">Active</span>
+                                <span class="badge bg-primary text-white">Active</span>
                                 @break
                             @case('pending')
-                                <span class="badge bg-warning">Pending</span>
+                                <span class="badge bg-warning text-white">Pending</span>
                                 @break
                             @case('cancelled')
-                                <span class="badge bg-secondary">Cancelled</span>
+                                <span class="badge bg-secondary text-white">Cancelled</span>
                                 @break
                             @default
-                                <span class="badge bg-secondary">{{ ucfirst($subscription->status) }}</span>
+                                <span class="badge bg-secondary text-white">{{ ucfirst($subscription->status) }}</span>
                         @endswitch
                     </div>
                 </div>

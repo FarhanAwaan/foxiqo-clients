@@ -6,15 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class UserController extends Controller
 {
     public function __construct(
-        protected AuditService $auditService
+        protected AuditService $auditService,
+        protected EmailService $emailService
     ) {}
 
     public function index(Request $request): View
@@ -79,11 +80,10 @@ class UserController extends Controller
 
         $this->auditService->log('user_created', $user);
 
-        // TODO: Send invitation email
-        // Mail::to($user->email)->send(new UserInvitationMail($user, $token));
+        $this->emailService->sendUserInvitation($user, $token);
 
         return redirect()->route('admin.users.show', $user)
-            ->with('success', 'User created. Invitation email will be sent.');
+            ->with('success', 'User created. Invitation email sent.');
     }
 
     public function show(User $user): View
@@ -158,8 +158,7 @@ class UserController extends Controller
 
         $token = $user->generateSignupToken();
 
-        // TODO: Send invitation email
-        // Mail::to($user->email)->send(new UserInvitationMail($user, $token));
+        $this->emailService->sendUserInvitation($user, $token);
 
         return back()->with('success', 'Invitation resent successfully.');
     }

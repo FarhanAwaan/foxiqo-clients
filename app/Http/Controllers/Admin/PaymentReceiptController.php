@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\PaymentReceipt;
 use App\Services\AuditService;
+use App\Services\EmailService;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,8 @@ class PaymentReceiptController extends Controller
 {
     public function __construct(
         protected InvoiceService $invoiceService,
-        protected AuditService $auditService
+        protected AuditService $auditService,
+        protected EmailService $emailService
     ) {}
 
     public function index(Request $request): View
@@ -81,6 +83,8 @@ class PaymentReceiptController extends Controller
 
         $this->auditService->log('receipt_approved', $receipt, $oldValues);
 
+        $this->emailService->sendReceiptApproved($receipt);
+
         return redirect()->route('admin.receipts.index')
             ->with('success', 'Receipt approved and invoice marked as paid.');
     }
@@ -105,6 +109,8 @@ class PaymentReceiptController extends Controller
         ]);
 
         $this->auditService->log('receipt_rejected', $receipt, $oldValues);
+
+        $this->emailService->sendReceiptRejected($receipt);
 
         return redirect()->route('admin.receipts.index')
             ->with('success', 'Receipt rejected. Customer can upload a new receipt.');

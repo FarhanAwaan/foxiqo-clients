@@ -36,19 +36,19 @@
                 <div class="card-actions">
                     @switch($invoice->status)
                         @case('draft')
-                            <span class="badge bg-secondary">Draft</span>
+                            <span class="badge bg-secondary text-white">Draft</span>
                             @break
                         @case('sent')
-                            <span class="badge bg-info">Awaiting Payment</span>
+                            <span class="badge bg-info text-white">Awaiting Payment</span>
                             @break
                         @case('paid')
-                            <span class="badge bg-success">Paid</span>
+                            <span class="badge bg-success text-white">Paid</span>
                             @break
                         @case('overdue')
-                            <span class="badge bg-danger">Overdue</span>
+                            <span class="badge bg-danger text-white">Overdue</span>
                             @break
                         @case('voided')
-                            <span class="badge bg-dark">Voided</span>
+                            <span class="badge bg-dark text-white">Voided</span>
                             @break
                     @endswitch
                 </div>
@@ -76,7 +76,7 @@
                         <div class="datagrid-content">
                             {{ $invoice->due_date->format('M d, Y') }}
                             @if($invoice->isOverdue() && $invoice->status !== 'paid')
-                                <span class="badge bg-danger ms-1">Overdue</span>
+                                <span class="badge bg-danger ms-1 text-white">Overdue</span>
                             @endif
                         </div>
                     </div>
@@ -124,11 +124,11 @@
                             <div class="datagrid-title">Subscription Status</div>
                             <div class="datagrid-content">
                                 @if($invoice->subscription->status === 'active')
-                                    <span class="badge bg-success">Active</span>
+                                    <span class="badge bg-success text-white">Active</span>
                                 @elseif($invoice->subscription->status === 'pending')
-                                    <span class="badge bg-warning">Pending</span>
+                                    <span class="badge bg-warning text-white">Pending</span>
                                 @else
-                                    <span class="badge bg-secondary">{{ ucfirst($invoice->subscription->status) }}</span>
+                                    <span class="badge bg-secondary text-white">{{ ucfirst($invoice->subscription->status) }}</span>
                                 @endif
                             </div>
                         </div>

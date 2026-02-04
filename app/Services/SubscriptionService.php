@@ -14,7 +14,8 @@ class SubscriptionService
 {
     public function __construct(
         protected InvoiceService $invoiceService,
-        protected AuditService $auditService
+        protected AuditService $auditService,
+        protected EmailService $emailService
     ) {}
 
     public function create(Agent $agent, Plan $plan, ?float $customPrice = null): Subscription
@@ -71,9 +72,11 @@ class SubscriptionService
             'expires_at' => $endDate->endOfDay(),
         ]);
 
-        $this->invoiceService->createForSubscription($subscription);
+        $invoice = $this->invoiceService->createForSubscription($subscription);
 
         $this->auditService->log('subscription_renewed', $subscription);
+
+        $this->emailService->sendSubscriptionRenewal($subscription, $invoice);
     }
 
     /**
@@ -158,6 +161,8 @@ class SubscriptionService
         }
 
         $this->auditService->log('subscription_cancelled', $subscription, $oldValues);
+
+        $this->emailService->sendSubscriptionCancelled($subscription);
     }
 
     public function createBillingCycleSnapshot(Subscription $subscription): BillingCycle

@@ -93,13 +93,13 @@
                     <div class="mb-3 text-center">
                         @switch($receipt->status)
                             @case('pending')
-                                <span class="badge bg-yellow-lt fs-5 px-3 py-2">Pending Review</span>
+                                <span class="badge bg-yellow-lt fs-5 px-3 py-2 text-white">Pending Review</span>
                                 @break
                             @case('approved')
-                                <span class="badge bg-green-lt fs-5 px-3 py-2">Approved</span>
+                                <span class="badge bg-green-lt fs-5 px-3 py-2 text-white">Approved</span>
                                 @break
                             @case('rejected')
-                                <span class="badge bg-red-lt fs-5 px-3 py-2">Rejected</span>
+                                <span class="badge bg-red-lt fs-5 px-3 py-2 text-white">Rejected</span>
                                 @break
                         @endswitch
                     </div>
@@ -146,16 +146,16 @@
                             <div class="datagrid-content">
                                 @switch($receipt->invoice->status)
                                     @case('paid')
-                                        <span class="badge bg-green-lt">Paid</span>
+                                        <span class="badge bg-green-lt text-white">Paid</span>
                                         @break
                                     @case('sent')
-                                        <span class="badge bg-blue-lt">Sent</span>
+                                        <span class="badge bg-blue-lt text-white">Sent</span>
                                         @break
                                     @case('overdue')
-                                        <span class="badge bg-red-lt">Overdue</span>
+                                        <span class="badge bg-red-lt text-white">Overdue</span>
                                         @break
                                     @default
-                                        <span class="badge bg-secondary-lt">{{ ucfirst($receipt->invoice->status) }}</span>
+                                        <span class="badge bg-secondary-lt text-white">{{ ucfirst($receipt->invoice->status) }}</span>
                                 @endswitch
                             </div>
                         </div>

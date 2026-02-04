@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Billing;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentLink;
 use App\Models\PaymentReceipt;
+use App\Services\EmailService;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Storage;
 class PaymentController extends Controller
 {
     public function __construct(
-        protected InvoiceService $invoiceService
+        protected InvoiceService $invoiceService,
+        protected EmailService $emailService
     ) {}
 
     /**
@@ -177,7 +179,7 @@ class PaymentController extends Controller
         $path = $file->store('payment-receipts/' . date('Y/m'), 'public');
 
         // Create the receipt record
-        PaymentReceipt::create([
+        $receipt = PaymentReceipt::create([
             'payment_link_id' => $paymentLink->id,
             'invoice_id' => $paymentLink->invoice_id,
             'file_path' => $path,
@@ -187,6 +189,9 @@ class PaymentController extends Controller
             'status' => 'pending',
             'customer_notes' => $request->input('notes'),
         ]);
+
+        // Notify admin about the new receipt
+        $this->emailService->sendNewReceiptUploaded($receipt);
 
         return redirect()->route('billing.payment.receipt-uploaded', $token);
     }

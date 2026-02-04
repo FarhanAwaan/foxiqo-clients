@@ -14,7 +14,8 @@ use Carbon\Carbon;
 class InvoiceService
 {
     public function __construct(
-        protected AuditService $auditService
+        protected AuditService $auditService,
+        protected EmailService $emailService
     ) {}
 
     public function createForSubscription(Subscription $subscription): Invoice
@@ -68,6 +69,8 @@ class InvoiceService
         }
 
         $this->auditService->log('payment_link_created', $paymentLink);
+
+        $this->emailService->sendPaymentLink($invoice, $paymentLink);
 
         return $paymentLink;
     }
