@@ -8,12 +8,12 @@ use App\Models\PaymentLink;
 use App\Models\Subscription;
 use App\Models\SystemSetting;
 use App\Events\PaymentReceived;
+use App\Exceptions\InvoiceAlreadyPaidException;
 use Carbon\Carbon;
 
 class InvoiceService
 {
     public function __construct(
-        protected PayoneerService $payoneerService,
         protected AuditService $auditService
     ) {}
 
@@ -38,41 +38,72 @@ class InvoiceService
         return $invoice;
     }
 
-    public function sendPaymentLink(Invoice $invoice, bool $manual = false): PaymentLink
+    /**
+     * Create a payment link for an invoice (self-hosted).
+     */
+    public function createPaymentLink(Invoice $invoice, bool $manual = false): PaymentLink
     {
-        $company = $invoice->company;
+        if ($invoice->status === 'paid') {
+            throw new InvoiceAlreadyPaidException('Cannot create payment link for a paid invoice.');
+        }
+
         $expiryDays = SystemSetting::getValue('payment_link_expiry_days', 14);
 
-        $payoneerResponse = $this->payoneerService->createPaymentRequest(
-            $invoice->amount,
-            $invoice->invoice_number,
-            $company->effective_billing_email,
-            "Invoice {$invoice->invoice_number} for {$company->name}"
-        );
-
+        // Payment token and URL are auto-generated in PaymentLink::creating() event
         $paymentLink = PaymentLink::create([
             'invoice_id' => $invoice->id,
-            'provider' => 'payoneer',
-            'provider_reference' => $payoneerResponse['request_id'] ?? null,
-            'payment_url' => $payoneerResponse['payment_url'],
+            'provider' => 'internal',
             'amount' => $invoice->amount,
-            'status' => 'sent',
+            'status' => 'pending',
             'sent_at' => now(),
             'sent_manually' => $manual,
             'expires_at' => now()->addDays($expiryDays),
         ]);
 
-        $invoice->update([
-            'status' => 'sent',
-            'sent_at' => now(),
-        ]);
+        if ($invoice->status === 'draft') {
+            $invoice->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+            ]);
+        }
 
-        $this->auditService->log('payment_link_sent', $paymentLink);
+        $this->auditService->log('payment_link_created', $paymentLink);
 
         return $paymentLink;
     }
 
-    public function markAsPaid(Invoice $invoice, string $provider, ?string $transactionId = null): Payment
+    /**
+     * Alias for backward compatibility.
+     */
+    public function sendPaymentLink(Invoice $invoice, bool $manual = false): PaymentLink
+    {
+        return $this->createPaymentLink($invoice, $manual);
+    }
+
+    /**
+     * Get or create an active payment link for an invoice.
+     */
+    public function getOrCreateActivePaymentLink(Invoice $invoice): ?PaymentLink
+    {
+        if ($invoice->status === 'paid') {
+            return null;
+        }
+
+        // Find existing active payment link
+        $activeLink = $invoice->paymentLinks()
+            ->active()
+            ->latest()
+            ->first();
+
+        if ($activeLink) {
+            return $activeLink;
+        }
+
+        // Create a new one
+        return $this->createPaymentLink($invoice);
+    }
+
+    public function markAsPaid(Invoice $invoice, string $provider, ?string $transactionId = null, ?PaymentLink $paymentLink = null): Payment
     {
         $invoice->update([
             'status' => 'paid',
@@ -81,11 +112,12 @@ class InvoiceService
 
         // Update any open payment links
         $invoice->paymentLinks()
-            ->whereIn('status', ['created', 'sent'])
+            ->whereIn('status', ['pending', 'sent'])
             ->update(['status' => 'paid', 'paid_at' => now()]);
 
         $payment = Payment::create([
             'invoice_id' => $invoice->id,
+            'payment_link_id' => $paymentLink?->id,
             'amount' => $invoice->amount,
             'provider' => $provider,
             'provider_transaction_id' => $transactionId,
@@ -98,6 +130,38 @@ class InvoiceService
         event(new PaymentReceived($invoice, $payment));
 
         return $payment;
+    }
+
+    /**
+     * Void an unpaid invoice.
+     */
+    public function voidInvoice(Invoice $invoice, ?string $reason = null): void
+    {
+        if ($invoice->status === 'paid') {
+            throw new InvoiceAlreadyPaidException('Cannot void a paid invoice.');
+        }
+
+        $oldValues = $invoice->toArray();
+
+        // Cancel all active payment links
+        $invoice->paymentLinks()
+            ->whereIn('status', ['pending', 'sent'])
+            ->update(['status' => 'cancelled']);
+
+        $invoice->update([
+            'status' => 'voided',
+            'notes' => $reason ? "Voided: {$reason}" : 'Voided',
+        ]);
+
+        $this->auditService->log('invoice_voided', $invoice, $oldValues);
+    }
+
+    /**
+     * Check if an invoice can be safely voided.
+     */
+    public function canVoid(Invoice $invoice): bool
+    {
+        return !in_array($invoice->status, ['paid', 'voided']);
     }
 
     protected function generateInvoiceNumber(): string

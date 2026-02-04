@@ -33,11 +33,11 @@ class DefaultSeeder extends Seeder
 
         // Create sample company
         $company = Company::firstOrCreate([
-            'email' => 'demo@acmecorp.com',
+            'email' => 'farhanawaan@gmail.com',
         ], [
             'uuid' => Str::uuid(),
             'name' => 'Acme Corporation',
-            'billing_email' => 'billing@acmecorp.com',
+            'billing_email' => 'farhanawaan@gmail.com',
             'phone' => '+1 (555) 123-4567',
             'address' => '123 Business Ave',
             'city' => 'San Francisco',
@@ -49,7 +49,7 @@ class DefaultSeeder extends Seeder
 
         // Create sample customer user (active)
         User::firstOrCreate([
-            'email' => 'john@acmecorp.com',
+            'email' => 'farhanawaan@gmail.com',
         ], [
             'uuid' => Str::uuid(),
             'company_id' => $company->id,

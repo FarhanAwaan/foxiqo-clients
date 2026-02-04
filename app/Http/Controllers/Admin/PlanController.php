@@ -18,7 +18,7 @@ class PlanController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Plan::with('company');
+        $query = Plan::with('company')->withCount('subscriptions');
 
         if ($request->filled('type')) {
             if ($request->type === 'standard') {

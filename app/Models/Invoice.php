@@ -46,6 +46,21 @@ class Invoice extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(PaymentReceipt::class);
+    }
+
+    public function pendingReceipts(): HasMany
+    {
+        return $this->hasMany(PaymentReceipt::class)->where('status', 'pending');
+    }
+
+    public function hasPendingReceipt(): bool
+    {
+        return $this->receipts()->where('status', 'pending')->exists();
+    }
+
     public function isOverdue(): bool
     {
         return $this->status !== 'paid' && $this->due_date < now();

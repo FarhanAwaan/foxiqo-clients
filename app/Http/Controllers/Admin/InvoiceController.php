@@ -36,7 +36,7 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice): View
     {
-        $invoice->load(['company', 'subscription.agent', 'subscription.plan', 'paymentLinks', 'payments']);
+        $invoice->load(['company', 'subscription.agent', 'subscription.plan', 'paymentLinks', 'payments', 'receipts.reviewer']);
 
         return view('admin.invoices.show', compact('invoice'));
     }
@@ -63,7 +63,7 @@ class InvoiceController extends Controller
         }
 
         $validated = $request->validate([
-            'provider' => ['required', 'in:payoneer,stripe,manual'],
+            'provider' => ['required', 'in:internal,bank_transfer,payoneer,stripe,manual'],
             'transaction_id' => ['nullable', 'string', 'max:255'],
         ]);
 

@@ -24,6 +24,7 @@
 
 @section('content')
     <div class="row">
+
         <!-- Agent Info Sidebar -->
         <div class="col-lg-4">
             <div class="card">
@@ -113,6 +114,10 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Calls List -->
+        <div class="col-lg-8">
 
             <!-- Subscription Card -->
             @if($agent->subscription)
@@ -120,7 +125,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Subscription</h3>
                         <div class="card-actions">
-                            <a href="{{ route('admin.subscriptions.show', $agent->subscription) }}" class="btn btn-ghost-secondary btn-sm">
+                            <a href="{{ route('admin.subscriptions.show', $agent->subscription) }}" class="btn btn-ghost-primary btn-md">
                                 View
                             </a>
                         </div>
@@ -170,17 +175,14 @@
                 <div class="card bg-yellow-lt">
                     <div class="card-body">
                         <h4 class="mb-2">No Subscription</h4>
-                        <p class="text-muted small mb-2">This agent doesn't have an active subscription plan.</p>
+                        <p class="text-muted mb-2">This agent doesn't have an active subscription plan.</p>
                         <a href="{{ route('admin.subscriptions.create') }}?agent_id={{ $agent->uuid }}" class="btn btn-warning btn-sm">
                             Add Subscription
                         </a>
                     </div>
                 </div>
             @endif
-        </div>
 
-        <!-- Calls List -->
-        <div class="col-lg-8">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Call History</h3>

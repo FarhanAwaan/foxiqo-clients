@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\SubscriptionActivated;
+use App\Exceptions\SubscriptionHasPaidInvoiceException;
 use App\Models\Agent;
 use App\Models\BillingCycle;
 use App\Models\Plan;
@@ -75,9 +76,70 @@ class SubscriptionService
         $this->auditService->log('subscription_renewed', $subscription);
     }
 
-    public function cancel(Subscription $subscription, ?string $reason = null): void
+    /**
+     * Check if subscription can be cancelled.
+     *
+     * @return array{can_cancel: bool, reason: string|null, has_paid_invoice: bool, unpaid_invoices: int}
+     */
+    public function canCancel(Subscription $subscription): array
     {
-        $this->createBillingCycleSnapshot($subscription);
+        // Check for paid invoices in current billing period
+        $paidInvoice = $subscription->invoices()
+            ->where('status', 'paid')
+            ->where('billing_period_start', $subscription->current_period_start)
+            ->first();
+
+        if ($paidInvoice) {
+            return [
+                'can_cancel' => false,
+                'reason' => 'Cannot cancel subscription with a paid invoice for the current billing period.',
+                'has_paid_invoice' => true,
+                'unpaid_invoices' => 0,
+            ];
+        }
+
+        // Count unpaid invoices that will be voided
+        $unpaidInvoices = $subscription->invoices()
+            ->whereIn('status', ['draft', 'sent', 'overdue'])
+            ->count();
+
+        return [
+            'can_cancel' => true,
+            'reason' => null,
+            'has_paid_invoice' => false,
+            'unpaid_invoices' => $unpaidInvoices,
+        ];
+    }
+
+    /**
+     * Cancel a subscription with business logic safeguards.
+     *
+     * @throws SubscriptionHasPaidInvoiceException
+     */
+    public function cancel(Subscription $subscription, ?string $reason = null, bool $force = false): void
+    {
+        $cancelCheck = $this->canCancel($subscription);
+
+        if (!$cancelCheck['can_cancel'] && !$force) {
+            throw new SubscriptionHasPaidInvoiceException($cancelCheck['reason']);
+        }
+
+        // Void all unpaid invoices
+        $unpaidInvoices = $subscription->invoices()
+            ->whereIn('status', ['draft', 'sent', 'overdue'])
+            ->get();
+
+        foreach ($unpaidInvoices as $invoice) {
+            $this->invoiceService->voidInvoice(
+                $invoice,
+                "Subscription cancelled" . ($reason ? ": {$reason}" : "")
+            );
+        }
+
+        // Create billing cycle snapshot if subscription was active
+        if ($subscription->status === 'active' && $subscription->current_period_start) {
+            $this->createBillingCycleSnapshot($subscription);
+        }
 
         $oldValues = $subscription->toArray();
 
@@ -86,6 +148,14 @@ class SubscriptionService
             'cancelled_at' => now(),
             'cancellation_reason' => $reason,
         ]);
+
+        // Deactivate the associated agent
+        if ($subscription->agent && $subscription->agent->status === 'active') {
+            $subscription->agent->update([
+                'status' => 'inactive',
+            ]);
+            $this->auditService->log('agent_deactivated', $subscription->agent, ['reason' => 'Subscription cancelled']);
+        }
 
         $this->auditService->log('subscription_cancelled', $subscription, $oldValues);
     }

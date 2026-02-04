@@ -138,7 +138,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Company Agents</h3>
                         <div class="card-actions">
-                            <a href="{{ route('admin.companies.show', $user->company) }}" class="btn btn-ghost-secondary btn-sm">
+                            <a href="{{ route('admin.companies.show', $user->company) }}" class="btn btn-ghost-primary btn-md">
                                 View Company
                             </a>
                         </div>
@@ -216,7 +216,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Company Invoices</h3>
                         <div class="card-actions">
-                            <a href="{{ route('admin.invoices.index') }}?company={{ $user->company->uuid }}" class="btn btn-ghost-secondary btn-sm">
+                            <a href="{{ route('admin.invoices.index') }}?company={{ $user->company->uuid }}" class="btn btn-ghost-primary btn-md">
                                 View All
                             </a>
                         </div>
@@ -266,7 +266,7 @@
                                             @endswitch
                                         </td>
                                         <td>
-                                            <a href="{{ route('admin.invoices.show', $invoice) }}" class="btn btn-icon btn-ghost-secondary btn-sm">
+                                            <a href="{{ route('admin.invoices.show', $invoice) }}" class="btn btn-icon btn-ghost-primary btn-md">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
                                             </a>
                                         </td>

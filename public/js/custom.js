@@ -152,18 +152,29 @@
          * Copy text to clipboard
          */
         copyToClipboard: function(text) {
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(function() {
-                    Foxiqo.toast('Copied to clipboard', 'success');
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    // Show success feedback
+                    const btn = event.target.closest('button');
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="ti ti-check icon"></i>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                    }, 2000);
+                }).catch(() => {
+                    alert('Failed to copy. Please copy manually.');
                 });
             } else {
                 // Fallback for older browsers
-                var $temp = $('<textarea>');
-                $('body').append($temp);
-                $temp.val(text).select();
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
                 document.execCommand('copy');
-                $temp.remove();
-                Foxiqo.toast('Copied to clipboard', 'success');
+                document.body.removeChild(ta);
+                alert('Copied to clipboard!');
             }
         },
 

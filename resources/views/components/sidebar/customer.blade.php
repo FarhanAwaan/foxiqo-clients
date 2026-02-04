@@ -43,13 +43,28 @@
                     </a>
                 </li>
 
-                <!-- Call Logs -->
+                <!-- Billing Section -->
+                <li class="nav-item pt-2">
+                    <span class="nav-link disabled text-uppercase small">Billing</span>
+                </li>
+
+                <!-- Subscriptions -->
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('customer.calls.*') ? 'active' : '' }}" href="#">
+                    <a class="nav-link {{ request()->routeIs('customer.subscriptions.*') ? 'active' : '' }}" href="{{ route('customer.subscriptions.index') }}">
                         <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" /><path d="M7 8h10" /><path d="M7 12h10" /><path d="M7 16h10" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7l7 0l0 7" /></svg>
                         </span>
-                        <span class="nav-link-title">Call History</span>
+                        <span class="nav-link-title">Subscriptions</span>
+                    </a>
+                </li>
+
+                <!-- Invoices -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('customer.invoices.*') ? 'active' : '' }}" href="{{ route('customer.invoices.index') }}">
+                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 7l1 0" /><path d="M9 13l6 0" /><path d="M13 17l2 0" /></svg>
+                        </span>
+                        <span class="nav-link-title">Invoices</span>
                     </a>
                 </li>
             </ul>
