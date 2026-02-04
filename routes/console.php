@@ -13,6 +13,11 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 
-Schedule::command(ProcessSubscriptionRenewals::class)->dailyAt('00:00');
-Schedule::command(SendExpiryNotifications::class)->dailyAt('09:00');
-Schedule::command(MarkOverdueInvoices::class)->dailyAt('00:00');
+Schedule::command(ProcessSubscriptionRenewals::class)->dailyAt('08:30')->timezone('America/New_York');
+Schedule::command(SendExpiryNotifications::class)->dailyAt('09:00')->timezone('America/New_York');
+Schedule::command(MarkOverdueInvoices::class)->dailyAt('12:00')->timezone('America/New_York');
+
+Schedule::command('queue:work database --tries=3 --timeout=90 --sleep=3 --stop-when-empty')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
