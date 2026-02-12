@@ -89,7 +89,7 @@
                     @if($invoice->paid_at)
                         <div class="datagrid-item">
                             <div class="datagrid-title">Paid On</div>
-                            <div class="datagrid-content text-success">{{ $invoice->paid_at->format('M d, Y \a\t g:i A') }}</div>
+                            <div class="datagrid-content text-primary">{{ $invoice->paid_at->format('M d, Y \a\t g:i A') }}</div>
                         </div>
                     @endif
                 </div>

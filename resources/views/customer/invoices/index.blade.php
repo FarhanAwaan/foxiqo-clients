@@ -121,22 +121,22 @@
                         <td>
                             @switch($invoice->status)
                                 @case('draft')
-                                    <span class="badge bg-secondary">Draft</span>
+                                    <span class="badge bg-secondary text-white">Draft</span>
                                     @break
                                 @case('sent')
-                                    <span class="badge bg-info">Sent</span>
+                                    <span class="badge bg-info text-white">Sent</span>
                                     @break
                                 @case('paid')
-                                    <span class="badge bg-success">Paid</span>
+                                    <span class="badge bg-success text-white">Paid</span>
                                     @break
                                 @case('overdue')
-                                    <span class="badge bg-danger">Overdue</span>
+                                    <span class="badge bg-danger text-white">Overdue</span>
                                     @break
                                 @case('voided')
-                                    <span class="badge bg-dark">Voided</span>
+                                    <span class="badge bg-dark text-white">Voided</span>
                                     @break
                                 @default
-                                    <span class="badge bg-secondary">{{ ucfirst($invoice->status) }}</span>
+                                    <span class="badge bg-secondary text-white">{{ ucfirst($invoice->status) }}</span>
                             @endswitch
                         </td>
                         <td>
