@@ -21,16 +21,16 @@
                         <h3 class="card-title">Subscription Details</h3>
                     </div>
                     <div class="card-body">
-                        <!-- Agent Info (Read-only) -->
+                        <!-- Assistant Info (Read-only) -->
                         <div class="mb-3">
-                            <label class="form-label">Agent</label>
+                            <label class="form-label">Assistant</label>
                             <div class="form-control-plaintext">
                                 <strong>{{ $subscription->agent?->name }}</strong>
                                 @if($subscription->agent?->phone_number)
                                     <span class="text-muted">({{ $subscription->agent->phone_number }})</span>
                                 @endif
                             </div>
-                            <small class="text-muted">Agent cannot be changed. Create a new subscription for a different agent.</small>
+                            <small class="text-muted">Assistant cannot be changed. Create a new subscription for a different assistant.</small>
                         </div>
 
                         <!-- Company Info (Read-only) -->

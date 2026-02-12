@@ -30,6 +30,13 @@ class SubscriptionService
 
         $this->auditService->log('subscription_created', $subscription);
 
+        // Create invoice and payment link immediately
+        $invoice = $this->invoiceService->createForSubscription($subscription);
+        $paymentLink = $this->invoiceService->createPaymentLink($invoice, false, false);
+
+        // Send one combined email with subscription info + payment link
+        $this->emailService->sendSubscriptionCreated($subscription, $invoice, $paymentLink);
+
         return $subscription;
     }
 
@@ -49,11 +56,16 @@ class SubscriptionService
             'expires_at' => $endDate->endOfDay(),
         ]);
 
-        $invoice = $this->invoiceService->createForSubscription($subscription);
+        // Update the existing invoice billing period to match activation dates
+        $latestInvoice = $subscription->invoices()->latest()->first();
+        if ($latestInvoice) {
+            $latestInvoice->update([
+                'billing_period_start' => $startDate,
+                'billing_period_end' => $endDate,
+            ]);
+        }
 
         $this->auditService->log('subscription_activated', $subscription);
-
-        event(new SubscriptionActivated($subscription, $invoice));
     }
 
     public function renew(Subscription $subscription): void

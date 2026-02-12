@@ -70,7 +70,7 @@ class SubscriptionController extends Controller
         );
 
         return redirect()->route('admin.subscriptions.show', $subscription)
-            ->with('success', 'Subscription created. Click Activate to start the billing period.');
+            ->with('success', 'Subscription created. Invoice and payment link have been sent to the customer.');
     }
 
     public function show(Subscription $subscription): View
@@ -129,7 +129,7 @@ class SubscriptionController extends Controller
         $this->subscriptionService->activate($subscription);
 
         return redirect()->route('admin.subscriptions.show', $subscription)
-            ->with('success', 'Subscription activated. Invoice has been created.');
+            ->with('success', 'Subscription activated successfully. Billing period has started.');
     }
 
     public function cancel(Request $request, Subscription $subscription): RedirectResponse

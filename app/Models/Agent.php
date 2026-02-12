@@ -14,7 +14,7 @@ class Agent extends Model
 
     protected $fillable = [
         'uuid', 'company_id', 'retell_agent_id', 'name',
-        'description', 'phone_number', 'cost_per_minute', 'status',
+        'description', 'phone_number', 'agent_type', 'cost_per_minute', 'status',
     ];
 
     protected $casts = [
@@ -44,5 +44,24 @@ class Agent extends Model
     public function hasActiveSubscription(): bool
     {
         return $this->subscription && $this->subscription->status === 'active';
+    }
+
+    public function getAgentTypeLabelAttribute(): string
+    {
+        return match ($this->agent_type) {
+            'inbound' => 'Inbound Only',
+            'outbound' => 'Outbound Only',
+            default => 'Inbound & Outbound',
+        };
+    }
+
+    public function getInboundCallsCountAttribute(): int
+    {
+        return $this->callLogs()->where('direction', 'inbound')->count();
+    }
+
+    public function getOutboundCallsCountAttribute(): int
+    {
+        return $this->callLogs()->where('direction', 'outbound')->count();
     }
 }

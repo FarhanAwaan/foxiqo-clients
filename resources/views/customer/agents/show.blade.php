@@ -3,7 +3,7 @@
 @section('title', $agent->name)
 
 @section('page-pretitle')
-    Agents
+    Assistants
 @endsection
 
 @section('page-header')
@@ -12,7 +12,7 @@
 
 @section('page-actions')
     <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
-        Back to Agents
+        Back to Assistants
     </a>
 @endsection
 
@@ -53,6 +53,17 @@
                             @default
                                 <span class="badge bg-secondary-lt">Archived</span>
                         @endswitch
+
+                        @switch($agent->agent_type)
+                            @case('inbound')
+                                <span class="badge bg-blue-lt">Inbound Only</span>
+                                @break
+                            @case('outbound')
+                                <span class="badge bg-cyan-lt">Outbound Only</span>
+                                @break
+                            @default
+                                <span class="badge bg-purple-lt">Inbound & Outbound</span>
+                        @endswitch
                     </div>
                 </div>
                 @if($agent->description)
@@ -79,6 +90,18 @@
                             <div class="agent-stat text-center">
                                 <div class="agent-stat-value text-green">{{ number_format($totalMinutes, 1) }}</div>
                                 <div class="agent-stat-label">Total Minutes</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="agent-stat text-center">
+                                <div class="agent-stat-value text-blue">{{ number_format($inboundCalls) }}</div>
+                                <div class="agent-stat-label">Inbound Calls</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="agent-stat text-center">
+                                <div class="agent-stat-value text-cyan">{{ number_format($outboundCalls) }}</div>
+                                <div class="agent-stat-label">Outbound Calls</div>
                             </div>
                         </div>
                         <div class="col-12">
@@ -152,7 +175,7 @@
                 <div class="card bg-yellow-lt">
                     <div class="card-body">
                         <h4 class="mb-2">No Active Plan</h4>
-                        <p class="text-muted small mb-0">Contact your administrator to set up a subscription plan for this agent.</p>
+                        <p class="text-muted small mb-0">Contact your administrator to set up a subscription plan for this assistant.</p>
                     </div>
                 </div>
             @endif

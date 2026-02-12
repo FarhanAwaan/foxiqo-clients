@@ -149,36 +149,6 @@
         },
 
         /**
-         * Copy text to clipboard
-         */
-        copyToClipboard: function(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => {
-                    // Show success feedback
-                    const btn = event.target.closest('button');
-                    const originalHtml = btn.innerHTML;
-                    btn.innerHTML = '<i class="ti ti-check icon"></i>';
-                    setTimeout(() => {
-                        btn.innerHTML = originalHtml;
-                    }, 2000);
-                }).catch(() => {
-                    alert('Failed to copy. Please copy manually.');
-                });
-            } else {
-                // Fallback for older browsers
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.position = 'fixed';
-                ta.style.left = '-9999px';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                alert('Copied to clipboard!');
-            }
-        },
-
-        /**
          * Debounce function
          */
         debounce: function(func, wait) {
@@ -190,6 +160,66 @@
                     func.apply(context, args);
                 }, wait);
             };
+        }
+    };
+
+    /**
+     * Global copy-to-clipboard function
+     * Accepts an element ID, reads its value or textContent, and copies to clipboard.
+     * Shows visual feedback on the nearest button.
+     */
+    window.copyToClipboard = function(elementId, e) {
+        var element = document.getElementById(elementId);
+        if (!element) return;
+
+        var text = element.value !== undefined && element.value !== '' ? element.value : element.textContent.trim();
+        var btn = e ? e.target.closest('button') : null;
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(function() {
+                if (btn) {
+                    var originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm text-success" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-success');
+                    setTimeout(function() {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-outline-primary');
+                    }, 2000);
+                }
+            }).catch(function() {
+                fallbackCopy(element, text);
+            });
+        } else {
+            fallbackCopy(element, text);
+        }
+
+        function fallbackCopy(el, val) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.select();
+                document.execCommand('copy');
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = val;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+            if (btn) {
+                var originalHtml = btn.innerHTML;
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm text-success" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-success');
+                setTimeout(function() {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-primary');
+                }, 2000);
+            }
         }
     };
 

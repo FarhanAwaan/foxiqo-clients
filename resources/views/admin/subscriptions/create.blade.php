@@ -36,16 +36,16 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label required">Agent</label>
+                            <label class="form-label required">Assistant</label>
                             <select name="agent_id" id="agentSelect" class="form-select @error('agent_id') is-invalid @enderror" required>
-                                <option value="">Select Agent</option>
+                                <option value="">Select Assistant</option>
                                 @foreach($agents as $agent)
                                     <option value="{{ $agent->id }}" data-company="{{ $agent->company_id }}" {{ old('agent_id', request('agent_id')) == $agent->id ? 'selected' : '' }}>
                                         {{ $agent->name }} {{ $agent->phone_number ? "({$agent->phone_number})" : '' }}
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted">Only agents without an existing subscription are shown</small>
+                            <small class="text-muted">Only assistants without an existing subscription are shown</small>
                             @error('agent_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

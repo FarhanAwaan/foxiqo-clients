@@ -62,6 +62,7 @@ class AgentController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'phone_number' => ['nullable', 'string', 'max:20'],
+            'agent_type' => ['required', 'string', 'in:inbound,outbound,both'],
             'cost_per_minute' => ['required', 'numeric', 'min:0'],
         ]);
 
@@ -87,8 +88,10 @@ class AgentController extends Controller
         $totalCalls = $agent->callLogs()->count();
         $totalMinutes = $agent->callLogs()->sum('duration_minutes');
         $avgDuration = $totalCalls > 0 ? $agent->callLogs()->avg('duration_seconds') : 0;
+        $inboundCalls = $agent->callLogs()->where('direction', 'inbound')->count();
+        $outboundCalls = $agent->callLogs()->where('direction', 'outbound')->count();
 
-        return view('admin.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration'));
+        return view('admin.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls'));
     }
 
     public function callDetails(Agent $agent, CallLog $callLog): JsonResponse
@@ -133,6 +136,7 @@ class AgentController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'phone_number' => ['nullable', 'string', 'max:20'],
+            'agent_type' => ['required', 'string', 'in:inbound,outbound,both'],
             'cost_per_minute' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:active,paused,archived'],
         ]);

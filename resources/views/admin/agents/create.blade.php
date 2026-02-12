@@ -1,13 +1,13 @@
 @extends('layouts.admin')
 
-@section('title', 'Add Agent')
+@section('title', 'Add Assistant')
 
 @section('page-pretitle')
-    Agents
+    Assistants
 @endsection
 
 @section('page-header')
-    Add New Agent
+    Add New Assistant
 @endsection
 
 @section('content')

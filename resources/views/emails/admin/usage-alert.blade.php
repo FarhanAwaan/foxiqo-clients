@@ -6,7 +6,7 @@
     <h2 style="color:#1a1a2e; margin:0 0 16px; font-size:20px;">Usage Alert: Circuit Breaker Triggered</h2>
 
     <p style="color:#495057; margin:0 0 24px; line-height:1.6;">
-        An AI agent has exceeded the usage threshold and the circuit breaker has been triggered.
+        An AI assistant has exceeded the usage threshold and the circuit breaker has been triggered.
     </p>
 
     <!-- Details -->
@@ -19,7 +19,7 @@
                         <td style="padding:4px 0; color:#991b1b; font-weight:600; text-align:right;">{{ $company->name }}</td>
                     </tr>
                     <tr>
-                        <td style="padding:4px 0; color:#991b1b; font-size:13px;">Agent</td>
+                        <td style="padding:4px 0; color:#991b1b; font-size:13px;">Assistant</td>
                         <td style="padding:4px 0; color:#991b1b; font-weight:600; text-align:right;">{{ $agent->name }}</td>
                     </tr>
                     <tr>
@@ -40,6 +40,6 @@
     </table>
 
     <p style="color:#495057; margin:0; line-height:1.6; font-size:13px;">
-        The agent has been automatically restricted to prevent further overuse. Please review the subscription and take appropriate action (upgrade plan, contact the customer, or adjust the circuit breaker threshold).
+        The assistant has been automatically restricted to prevent further overuse. Please review the subscription and take appropriate action (upgrade plan, contact the customer, or adjust the circuit breaker threshold).
     </p>
 @endsection

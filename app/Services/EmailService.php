@@ -11,6 +11,7 @@ use App\Mail\ReceiptApprovedMail;
 use App\Mail\ReceiptRejectedMail;
 use App\Mail\SubscriptionActivatedMail;
 use App\Mail\SubscriptionCancelledMail;
+use App\Mail\SubscriptionCreatedMail;
 use App\Mail\SubscriptionExpiryWarningMail;
 use App\Mail\SubscriptionRenewalMail;
 use App\Mail\UsageAlertMail;
@@ -66,6 +67,26 @@ class EmailService
             data: [
                 'invoice_id' => $invoice->id,
                 'payment_id' => $payment->id,
+            ]
+        );
+    }
+
+    public function sendSubscriptionCreated(Subscription $subscription, Invoice $invoice, PaymentLink $paymentLink): void
+    {
+        $subscription->load(['company', 'agent', 'plan']);
+        $company = $subscription->company;
+
+        $this->createNotificationAndDispatch(
+            mailable: new SubscriptionCreatedMail($subscription, $invoice, $paymentLink),
+            recipientEmail: $company->effective_billing_email,
+            type: 'subscription_created',
+            subject: "New Subscription — Payment Required: {$subscription->agent->name}",
+            body: "A subscription for {$subscription->agent->name} on the {$subscription->plan->name} plan has been created. Payment of \${$invoice->amount} is required.",
+            companyId: $company->id,
+            data: [
+                'subscription_id' => $subscription->id,
+                'invoice_id' => $invoice->id,
+                'payment_link_id' => $paymentLink->id,
             ]
         );
     }

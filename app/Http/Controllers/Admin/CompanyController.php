@@ -115,4 +115,14 @@ class CompanyController extends Controller
         return redirect()->route('admin.companies.index')
             ->with('success', 'Company deleted successfully.');
     }
+
+    public function regenerateWebhook(Company $company): RedirectResponse
+    {
+        $company->regenerateWebhookSignature();
+
+        $this->auditService->log('webhook_signature_regenerated', $company);
+
+        return redirect()->route('admin.companies.show', $company)
+            ->with('success', 'Webhook signature regenerated successfully.');
+    }
 }

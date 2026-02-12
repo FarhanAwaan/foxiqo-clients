@@ -10,7 +10,7 @@
     </p>
 
     <p style="color:#495057; margin:0 0 24px; line-height:1.6;">
-        Your subscription has been cancelled. The associated AI agent has been deactivated.
+        Your subscription has been cancelled. The associated AI assistant has been deactivated.
     </p>
 
     <!-- Details -->
@@ -19,7 +19,7 @@
             <td style="padding:20px;">
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="padding:4px 0; color:#6c757d; font-size:13px;">Agent</td>
+                        <td style="padding:4px 0; color:#6c757d; font-size:13px;">Assistant</td>
                         <td style="padding:4px 0; color:#1a1a2e; font-weight:600; text-align:right;">{{ $agent->name }}</td>
                     </tr>
                     <tr>

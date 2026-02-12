@@ -46,12 +46,19 @@
         </tr>
     </table>
 
-    <!-- CTA Button -->
+    <!-- CTA Buttons -->
     <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-            <td align="center" style="padding:0 0 16px;">
+            <td align="center" style="padding:0 0 12px;">
                 <a href="{{ $reviewUrl }}" style="background-color:#4361ee; color:#ffffff; padding:14px 36px; text-decoration:none; border-radius:6px; display:inline-block; font-weight:600; font-size:15px;">
                     Review Receipt
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" style="padding:0 0 16px;">
+                <a href="{{ $dashboardUrl }}" style="background-color:#6c757d; color:#ffffff; padding:10px 28px; text-decoration:none; border-radius:6px; display:inline-block; font-weight:600; font-size:13px;">
+                    Go to Dashboard
                 </a>
             </td>
         </tr>

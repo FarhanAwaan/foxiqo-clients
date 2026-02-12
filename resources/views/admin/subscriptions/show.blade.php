@@ -71,7 +71,7 @@
                 <div class="card-body border-top">
                     <div class="datagrid">
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Agent</div>
+                            <div class="datagrid-title">Assistant</div>
                             <div class="datagrid-content">
                                 @if($subscription->agent)
                                     <a href="{{ route('admin.agents.show', $subscription->agent) }}">

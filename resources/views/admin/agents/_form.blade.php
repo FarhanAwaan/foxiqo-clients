@@ -2,12 +2,12 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Agent Information</h3>
+                <h3 class="card-title">Assistant Information</h3>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label required" for="name">Agent Name</label>
+                        <label class="form-label required" for="name">Assistant Name</label>
                         <input type="text"
                                name="name"
                                id="name"
@@ -68,6 +68,28 @@
                     </div>
 
                     <div class="col-md-6 mb-3">
+                        <label class="form-label required" for="agent_type">Assistant Type</label>
+                        <select name="agent_type"
+                                id="agent_type"
+                                class="form-select @error('agent_type') is-invalid @enderror"
+                                required>
+                            <option value="both" {{ old('agent_type', $agent->agent_type ?? 'both') == 'both' ? 'selected' : '' }}>
+                                Inbound & Outbound
+                            </option>
+                            <option value="inbound" {{ old('agent_type', $agent->agent_type ?? '') == 'inbound' ? 'selected' : '' }}>
+                                Inbound Only
+                            </option>
+                            <option value="outbound" {{ old('agent_type', $agent->agent_type ?? '') == 'outbound' ? 'selected' : '' }}>
+                                Outbound Only
+                            </option>
+                        </select>
+                        @error('agent_type')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-hint">Determines what types of calls this assistant handles</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
                         <label class="form-label required" for="cost_per_minute">Cost Per Minute</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
@@ -116,7 +138,7 @@
                                   id="description"
                                   class="form-control @error('description') is-invalid @enderror"
                                   rows="3"
-                                  placeholder="Describe what this agent does...">{{ old('description', $agent->description ?? '') }}</textarea>
+                                  placeholder="Describe what this assistant does...">{{ old('description', $agent->description ?? '') }}</textarea>
                         @error('description')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -130,7 +152,7 @@
         @isset($agent)
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Agent Info</h3>
+                    <h3 class="card-title">Assistant Info</h3>
                 </div>
                 <div class="card-body">
                     <div class="datagrid">
@@ -160,7 +182,7 @@
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary flex-fill">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" /><path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M14 4l0 4l-6 0l0 -4" /></svg>
-                        {{ isset($agent) ? 'Update Agent' : 'Create Agent' }}
+                        {{ isset($agent) ? 'Update Assistant' : 'Create Assistant' }}
                     </button>
                     <a href="{{ isset($agent) ? route('admin.agents.show', $agent) : route('admin.agents.index') }}" class="btn btn-outline-secondary">
                         Cancel
@@ -179,7 +201,7 @@
                         <div class="ms-3">
                             <h4 class="mb-1">Retell AI Integration</h4>
                             <p class="text-muted mb-0 small">
-                                Make sure you have created the agent in your Retell AI dashboard first. You'll need the agent ID to link it here.
+                                Make sure you have created the assistant in your Retell AI dashboard first. You'll need the agent ID to link it here.
                             </p>
                         </div>
                     </div>

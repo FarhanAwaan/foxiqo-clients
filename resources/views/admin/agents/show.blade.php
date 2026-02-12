@@ -3,7 +3,7 @@
 @section('title', $agent->name)
 
 @section('page-pretitle')
-    Agents
+    Assistants
 @endsection
 
 @section('page-header')
@@ -14,7 +14,7 @@
     <div class="btn-list">
         <a href="{{ route('admin.agents.edit', $agent) }}" class="btn btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
-            Edit Agent
+            Edit Assistant
         </a>
         <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
             Back to List
@@ -71,6 +71,21 @@
                             </div>
                         @endif
                         <div class="datagrid-item">
+                            <div class="datagrid-title">Type</div>
+                            <div class="datagrid-content">
+                                @switch($agent->agent_type)
+                                    @case('inbound')
+                                        <span class="badge bg-blue-lt">Inbound Only</span>
+                                        @break
+                                    @case('outbound')
+                                        <span class="badge bg-green-lt">Outbound Only</span>
+                                        @break
+                                    @default
+                                        <span class="badge bg-purple-lt">Inbound & Outbound</span>
+                                @endswitch
+                            </div>
+                        </div>
+                        <div class="datagrid-item">
                             <div class="datagrid-title">Retell Agent ID</div>
                             <div class="datagrid-content"><code class="small">{{ $agent->retell_agent_id }}</code></div>
                         </div>
@@ -103,6 +118,18 @@
                             <div class="agent-stat text-center">
                                 <div class="agent-stat-value text-green">{{ number_format($totalMinutes, 1) }}</div>
                                 <div class="agent-stat-label">Total Minutes</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="agent-stat text-center">
+                                <div class="agent-stat-value text-blue">{{ number_format($inboundCalls) }}</div>
+                                <div class="agent-stat-label">Inbound Calls</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="agent-stat text-center">
+                                <div class="agent-stat-value text-cyan">{{ number_format($outboundCalls) }}</div>
+                                <div class="agent-stat-label">Outbound Calls</div>
                             </div>
                         </div>
                         <div class="col-12">
@@ -175,7 +202,7 @@
                 <div class="card bg-yellow-lt">
                     <div class="card-body">
                         <h4 class="mb-2">No Subscription</h4>
-                        <p class="text-muted mb-2">This agent doesn't have an active subscription plan.</p>
+                        <p class="text-muted mb-2">This assistant doesn't have an active subscription plan.</p>
                         <a href="{{ route('admin.subscriptions.create') }}?agent_id={{ $agent->uuid }}" class="btn btn-warning btn-sm">
                             Add Subscription
                         </a>

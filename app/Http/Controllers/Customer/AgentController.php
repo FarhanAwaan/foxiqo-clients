@@ -38,8 +38,10 @@ class AgentController extends Controller
         $totalCalls = $agent->callLogs()->count();
         $totalMinutes = $agent->callLogs()->sum('duration_minutes');
         $avgDuration = $totalCalls > 0 ? $agent->callLogs()->avg('duration_seconds') : 0;
+        $inboundCalls = $agent->callLogs()->where('direction', 'inbound')->count();
+        $outboundCalls = $agent->callLogs()->where('direction', 'outbound')->count();
 
-        return view('customer.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration'));
+        return view('customer.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls'));
     }
 
     public function callDetails(Agent $agent, CallLog $callLog): JsonResponse

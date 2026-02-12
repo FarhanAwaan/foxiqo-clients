@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Company extends Model
 {
@@ -13,8 +14,34 @@ class Company extends Model
     protected $fillable = [
         'uuid', 'name', 'email', 'billing_email', 'phone',
         'address', 'city', 'state', 'postal_code', 'country',
-        'status', 'notes',
+        'status', 'webhook_signature', 'notes',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Company $company) {
+            if (empty($company->webhook_signature)) {
+                $company->webhook_signature = static::generateWebhookSignature();
+            }
+        });
+    }
+
+    public static function generateWebhookSignature(): string
+    {
+        return 'whsig_' . Str::random(40);
+    }
+
+    public function regenerateWebhookSignature(): string
+    {
+        $this->webhook_signature = static::generateWebhookSignature();
+        $this->save();
+        return $this->webhook_signature;
+    }
+
+    public function getWebhookUrl(): string
+    {
+        return url("/api/webhooks/{$this->id}/retell");
+    }
 
     public function users(): HasMany
     {

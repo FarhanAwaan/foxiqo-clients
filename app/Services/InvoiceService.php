@@ -23,15 +23,18 @@ class InvoiceService
         $amount = $subscription->getEffectivePrice();
         $dueDays = SystemSetting::getValue('invoice_due_days', 7);
 
+        $periodStart = $subscription->current_period_start ?? Carbon::today();
+        $periodEnd = $subscription->current_period_end ?? Carbon::today()->addDays(30);
+
         $invoice = Invoice::create([
             'invoice_number' => $this->generateInvoiceNumber(),
             'subscription_id' => $subscription->id,
             'company_id' => $subscription->company_id,
             'amount' => $amount,
             'status' => 'draft',
-            'billing_period_start' => $subscription->current_period_start,
-            'billing_period_end' => $subscription->current_period_end,
-            'due_date' => Carbon::parse($subscription->current_period_start)->addDays($dueDays),
+            'billing_period_start' => $periodStart,
+            'billing_period_end' => $periodEnd,
+            'due_date' => Carbon::parse($periodStart)->addDays($dueDays),
         ]);
 
         $this->auditService->log('invoice_created', $invoice);
@@ -42,7 +45,7 @@ class InvoiceService
     /**
      * Create a payment link for an invoice (self-hosted).
      */
-    public function createPaymentLink(Invoice $invoice, bool $manual = false): PaymentLink
+    public function createPaymentLink(Invoice $invoice, bool $manual = false, bool $sendEmail = true): PaymentLink
     {
         if ($invoice->status === 'paid') {
             throw new InvoiceAlreadyPaidException('Cannot create payment link for a paid invoice.');
@@ -70,7 +73,9 @@ class InvoiceService
 
         $this->auditService->log('payment_link_created', $paymentLink);
 
-        $this->emailService->sendPaymentLink($invoice, $paymentLink);
+        if ($sendEmail) {
+            $this->emailService->sendPaymentLink($invoice, $paymentLink);
+        }
 
         return $paymentLink;
     }

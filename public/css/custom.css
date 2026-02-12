@@ -583,10 +583,8 @@ a:hover {
 }
 
 .agent-stat-label {
-    font-size: 0.7rem;
-    color: #626976;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: 0.75rem;
+    color: #6c757d;
     margin-top: 2px;
 }
 

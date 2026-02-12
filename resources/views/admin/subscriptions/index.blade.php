@@ -97,7 +97,7 @@
             <table class="table table-vcenter card-table table-hover">
                 <thead>
                     <tr>
-                        <th>Agent</th>
+                        <th>Assistant</th>
                         <th>Company</th>
                         <th>Plan</th>
                         <th>Price</th>

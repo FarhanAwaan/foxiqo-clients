@@ -17,23 +17,23 @@
                 <div class="card-actions">
                     @switch($subscription->status)
                         @case('active')
-                            <span class="badge bg-success">Active</span>
+                            <span class="badge bg-primary text-white">Active</span>
                             @break
                         @case('pending')
-                            <span class="badge bg-warning">Pending Activation</span>
+                            <span class="badge bg-warning text-white">Pending Activation</span>
                             @break
                         @case('cancelled')
-                            <span class="badge bg-secondary">Cancelled</span>
+                            <span class="badge bg-secondary text-white">Cancelled</span>
                             @break
                         @default
-                            <span class="badge bg-secondary">{{ ucfirst($subscription->status) }}</span>
+                            <span class="badge bg-secondary text-white">{{ ucfirst($subscription->status) }}</span>
                     @endswitch
                 </div>
             </div>
             <div class="card-body">
                 <div class="datagrid">
                     <div class="datagrid-item">
-                        <div class="datagrid-title">Agent</div>
+                        <div class="datagrid-title">Assistant</div>
                         <div class="datagrid-content">
                             <a href="{{ route('customer.agents.show', $subscription->agent) }}">
                                 {{ $subscription->agent->name ?? 'N/A' }}
@@ -151,13 +151,13 @@
                                     <td>
                                         @switch($invoice->status)
                                             @case('paid')
-                                                <span class="badge bg-success">Paid</span>
+                                                <span class="badge bg-primary text-white">Paid</span>
                                                 @break
                                             @case('sent')
-                                                <span class="badge bg-info">Pending</span>
+                                                <span class="badge bg-info text-white">Pending</span>
                                                 @break
                                             @default
-                                                <span class="badge bg-secondary">{{ ucfirst($invoice->status) }}</span>
+                                                <span class="badge bg-secondary text-white">{{ ucfirst($invoice->status) }}</span>
                                         @endswitch
                                     </td>
                                     <td>
@@ -234,7 +234,7 @@
             </div>
         @endif
 
-        <!-- Agent Quick Link -->
+        <!-- Assistant Quick Link -->
         @if($subscription->agent)
             <div class="card mb-4">
                 <div class="card-body">
@@ -249,11 +249,11 @@
                         </span>
                         <div>
                             <div class="fw-bold">{{ $subscription->agent->name }}</div>
-                            <div class="text-muted small">Voice AI Agent</div>
+                            <div class="text-muted small">Voice AI Assistant</div>
                         </div>
                     </div>
                     <a href="{{ route('customer.agents.show', $subscription->agent) }}" class="btn btn-outline-primary w-100">
-                        View Agent Details
+                        View Assistant Details
                     </a>
                 </div>
             </div>

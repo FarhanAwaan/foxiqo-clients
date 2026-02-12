@@ -10,12 +10,12 @@ use Illuminate\Http\Response;
 
 class RetellWebhookController extends Controller
 {
-    public function handle(Request $request): Response
+    public function handle(Request $request, int $company): Response
     {
         $webhookLog = WebhookLog::create([
             'source' => 'retell',
             'event_type' => $request->input('event', 'unknown'),
-            'payload' => $request->all(),
+            'payload' => array_merge($request->all(), ['_company_id' => $company]),
             'headers' => $request->headers->all(),
             'status' => 'received',
         ]);

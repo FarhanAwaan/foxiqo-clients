@@ -10,7 +10,7 @@
     </p>
 
     <p style="color:#495057; margin:0 0 24px; line-height:1.6;">
-        Your subscription is expiring in <strong>{{ $daysRemaining }} day{{ $daysRemaining != 1 ? 's' : '' }}</strong>. If your subscription is not renewed, the associated AI agent will be deactivated.
+        Your subscription is expiring in <strong>{{ $daysRemaining }} day{{ $daysRemaining != 1 ? 's' : '' }}</strong>. If your subscription is not renewed, the associated AI assistant will be deactivated.
     </p>
 
     <!-- Subscription Details -->
@@ -19,7 +19,7 @@
             <td style="padding:20px;">
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="padding:4px 0; color:#92400e; font-size:13px;">Agent</td>
+                        <td style="padding:4px 0; color:#92400e; font-size:13px;">Assistant</td>
                         <td style="padding:4px 0; color:#92400e; font-weight:600; text-align:right;">{{ $agent->name }}</td>
                     </tr>
                     <tr>

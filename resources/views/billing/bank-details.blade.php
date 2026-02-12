@@ -77,7 +77,7 @@
                                 <label class="form-label text-muted small mb-1">Account Number</label>
                                 <div class="d-flex align-items-center">
                                     <div class="h4 mb-0 me-2 font-monospace" id="accountNumber">{{ config('billing.account_number', '1234567890') }}</div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('accountNumber')">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('accountNumber', event)">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
                                         Copy
                                     </button>
@@ -89,7 +89,7 @@
                                 <label class="form-label text-muted small mb-1">Routing Number / SWIFT</label>
                                 <div class="d-flex align-items-center">
                                     <div class="h4 mb-0 me-2 font-monospace" id="routingNumber">{{ config('billing.routing_number', 'ABCD1234') }}</div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('routingNumber')">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('routingNumber', event)">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
                                         Copy
                                     </button>
@@ -106,7 +106,7 @@
                                 <label class="form-label text-muted small mb-1">Amount to Transfer</label>
                                 <div class="d-flex align-items-center">
                                     <div class="h3 mb-0 me-2 text-primary" id="amount">${{ number_format($invoice->amount, 2) }}</div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('amount')">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('amount', event)">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
                                         Copy
                                     </button>
@@ -118,7 +118,7 @@
                                 <label class="form-label text-muted small mb-1">Payment Reference</label>
                                 <div class="d-flex align-items-center">
                                     <div class="h3 mb-0 me-2 font-monospace" id="reference">{{ $invoice->invoice_number }}</div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('reference')">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('reference', event)">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
                                         Copy
                                     </button>
@@ -203,58 +203,3 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-function copyToClipboard(elementId) {
-    const element = document.getElementById(elementId);
-    const text = element.textContent.trim();
-
-    // navigator.clipboard.writeText(text).then(() => {
-    //     // Show a brief visual feedback
-    //     const btn = event.target.closest('button');
-    //     const originalHTML = btn.innerHTML;
-    //     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm text-success" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg> Copied!';
-    //     btn.classList.remove('btn-outline-primary');
-    //     btn.classList.add('btn-success');
-
-    //     setTimeout(() => {
-    //         btn.innerHTML = originalHTML;
-    //         btn.classList.remove('btn-success');
-    //         btn.classList.add('btn-outline-primary');
-    //     }, 2000);
-    // });
-
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(url).then(() => {
-            // Show success feedback
-            const btn = event.target.closest('button');
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm text-success" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg> Copied!';
-            btn.classList.remove('btn-outline-primary');
-            btn.classList.add('btn-success');
-
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-primary');
-            }, 2000);
-        }).catch(() => {
-            input.select();
-            document.execCommand('copy');
-            alert('Payment link copied to clipboard!');
-        });
-    } else {
-        // Fallback for older browsers
-        const ta = document.createElement('textarea');
-        ta.value = url;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        alert('Payment link copied to clipboard!');
-    }
-}
-</script>
-@endpush

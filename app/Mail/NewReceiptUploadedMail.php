@@ -33,6 +33,7 @@ class NewReceiptUploadedMail extends Mailable
                 'invoice' => $this->receipt->invoice,
                 'company' => $this->receipt->invoice->company,
                 'reviewUrl' => route('admin.receipts.show', $this->receipt),
+                'dashboardUrl' => route('admin.dashboard'),
             ],
         );
     }

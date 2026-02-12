@@ -84,6 +84,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
 
     // Company Management
     Route::resource('companies', CompanyController::class);
+    Route::post('companies/{company}/regenerate-webhook', [CompanyController::class, 'regenerateWebhook'])->name('companies.regenerate-webhook');
 
     // User Management
     Route::resource('users', UserController::class);

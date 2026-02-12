@@ -22,7 +22,7 @@
                     </a>
                 </li>
 
-                <!-- Agents -->
+                <!-- Assistants -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('customer.agents.*') ? 'active' : '' }}" href="{{ route('customer.agents.index') }}">
                         <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -39,7 +39,7 @@
                                 <path d="M14 8v.01"></path>
                             </svg>
                         </span>
-                        <span class="nav-link-title">My Agents</span>
+                        <span class="nav-link-title">My Assistants</span>
                     </a>
                 </li>
 
