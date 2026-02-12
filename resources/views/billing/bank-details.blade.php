@@ -63,20 +63,20 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label text-muted small mb-1">Bank Name</label>
-                                <div class="h4 mb-0" id="bankName">{{ config('billing.bank_name', 'Your Bank Name') }}</div>
+                                <div class="h4 mb-0" id="bankName">{{ config('billing.payoneer.bank_name', 'Your Bank Name') }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label text-muted small mb-1">Account Holder</label>
-                                <div class="h4 mb-0" id="accountHolder">{{ config('billing.account_holder', 'Your Company Name') }}</div>
+                                <div class="h4 mb-0" id="accountHolder">{{ config('billing.payoneer.account_holder', 'Your Company Name') }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label text-muted small mb-1">Account Number</label>
                                 <div class="d-flex align-items-center">
-                                    <div class="h4 mb-0 me-2 font-monospace" id="accountNumber">{{ config('billing.account_number', '1234567890') }}</div>
+                                    <div class="h4 mb-0 me-2 font-monospace" id="accountNumber">{{ config('billing.payoneer.account_number', '1234567890') }}</div>
                                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('accountNumber', event)">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
                                         Copy
@@ -88,7 +88,7 @@
                             <div class="mb-3">
                                 <label class="form-label text-muted small mb-1">Routing Number / SWIFT</label>
                                 <div class="d-flex align-items-center">
-                                    <div class="h4 mb-0 me-2 font-monospace" id="routingNumber">{{ config('billing.routing_number', 'ABCD1234') }}</div>
+                                    <div class="h4 mb-0 me-2 font-monospace" id="routingNumber">{{ config('billing.payoneer.routing_number', 'ABCD1234') }}</div>
                                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('routingNumber', event)">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
                                         Copy
@@ -129,6 +129,18 @@
                 </div>
             </div>
 
+            <!-- Receipt Upload Instructions -->
+            <div class="alert alert-warning mb-0">
+                <div class="d-flex">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v4" /><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /><path d="M12 16h.01" /></svg>
+                    </div>
+                    <div>
+                        <strong>Important:</strong> Please include the invoice number <code>{{ $invoice->invoice_number }}</code> as your payment reference. This helps us identify and process your payment quickly.
+                    </div>
+                </div>
+            </div>
+
             <!-- Receipt Upload Section -->
             <div class="card bg-success-lt mb-4">
                 <div class="card-body">
@@ -165,17 +177,6 @@
                             Upload Receipt
                         </button>
                     </form>
-                </div>
-            </div>
-
-            <div class="alert alert-warning mb-0">
-                <div class="d-flex">
-                    <div>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v4" /><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /><path d="M12 16h.01" /></svg>
-                    </div>
-                    <div>
-                        <strong>Important:</strong> Please include the invoice number <code>{{ $invoice->invoice_number }}</code> as your payment reference. This helps us identify and process your payment quickly.
-                    </div>
                 </div>
             </div>
 

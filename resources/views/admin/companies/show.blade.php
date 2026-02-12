@@ -22,7 +22,7 @@
         </a>
         <a href="{{ route('admin.agents.create') }}?company_id={{ $company->uuid }}" class="btn btn-outline-primary">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
-            Add Agent
+            Add Assistant
         </a>
     </div>
 @endsection
@@ -231,10 +231,10 @@
             <!-- Agents -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Agents</h3>
+                    <h3 class="card-title">Ai Assistants</h3>
                     <div class="card-actions">
                         <a href="{{ route('admin.agents.create') }}?company_id={{ $company->uuid }}" class="btn btn-primary btn-sm">
-                            Add Agent
+                            Add Assistant
                         </a>
                     </div>
                 </div>
@@ -242,7 +242,7 @@
                     <table class="table table-vcenter card-table">
                         <thead>
                             <tr>
-                                <th>Agent</th>
+                                <th>Assistant</th>
                                 <th>Phone</th>
                                 <th>Plan</th>
                                 <th>Subscription</th>

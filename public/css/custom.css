@@ -685,6 +685,89 @@ a:hover {
 }
 
 /* ============================================
+   Flash Alert Styles
+   ============================================ */
+.alert-custom {
+    border: none;
+    border-left: 4px solid;
+    border-radius: 6px;
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #1a1a2e;
+    margin-bottom: 1rem;
+}
+
+.alert-custom .btn-close {
+    padding: 1rem;
+    opacity: 0.4;
+}
+
+.alert-custom .btn-close:hover {
+    opacity: 0.7;
+}
+
+.alert-custom-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.alert-custom-icon .icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Success: uses portal success green */
+.alert-custom-success {
+    background-color: rgba(16, 185, 129, 0.08);
+    border-left-color: var(--tblr-success);
+}
+
+.alert-custom-success .alert-custom-icon {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--tblr-success);
+}
+
+/* Danger: uses portal danger red */
+.alert-custom-danger {
+    background-color: rgba(239, 68, 68, 0.06);
+    border-left-color: var(--tblr-danger);
+}
+
+.alert-custom-danger .alert-custom-icon {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: var(--tblr-danger);
+}
+
+/* Warning: uses portal primary orange */
+.alert-custom-warning {
+    background-color: rgba(249, 105, 0, 0.06);
+    border-left-color: var(--tblr-primary);
+}
+
+.alert-custom-warning .alert-custom-icon {
+    background-color: rgba(249, 105, 0, 0.12);
+    color: var(--tblr-primary);
+}
+
+/* Info: uses portal primary orange (lighter) */
+.alert-custom-info {
+    background-color: rgba(249, 105, 0, 0.04);
+    border-left-color: var(--tblr-primary-lighten);
+}
+
+.alert-custom-info .alert-custom-icon {
+    background-color: rgba(249, 105, 0, 0.10);
+    color: var(--tblr-primary);
+}
+
+/* ============================================
    Alert small variant
    ============================================ */
 .alert-sm {

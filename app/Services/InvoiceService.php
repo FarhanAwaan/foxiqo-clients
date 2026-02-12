@@ -111,7 +111,7 @@ class InvoiceService
         return $this->createPaymentLink($invoice);
     }
 
-    public function markAsPaid(Invoice $invoice, string $provider, ?string $transactionId = null, ?PaymentLink $paymentLink = null): Payment
+    public function markAsPaid(Invoice $invoice, string $provider, ?string $transactionId = null, ?PaymentLink $paymentLink = null, bool $fireEvent = true): Payment
     {
         $invoice->update([
             'status' => 'paid',
@@ -135,7 +135,9 @@ class InvoiceService
 
         $this->auditService->log('payment_received', $payment);
 
-        event(new PaymentReceived($invoice, $payment));
+        if ($fireEvent) {
+            event(new PaymentReceived($invoice, $payment));
+        }
 
         return $payment;
     }

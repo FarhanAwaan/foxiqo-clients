@@ -112,6 +112,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     Route::get('receipts/{receipt}', [PaymentReceiptController::class, 'show'])->name('receipts.show');
     Route::post('receipts/{receipt}/approve', [PaymentReceiptController::class, 'approve'])->name('receipts.approve');
     Route::post('receipts/{receipt}/reject', [PaymentReceiptController::class, 'reject'])->name('receipts.reject');
+    Route::get('receipts/{receipt}/preview', [PaymentReceiptController::class, 'preview'])->name('receipts.preview');
     Route::get('receipts/{receipt}/download', [PaymentReceiptController::class, 'download'])->name('receipts.download');
 
     // Revenue Reports

@@ -42,11 +42,11 @@
                 <div class="card-body">
                     @if(in_array($receipt->mime_type, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']))
                         <div class="text-center">
-                            <img src="{{ asset('storage/' . $receipt->file_path) }}" alt="Payment Receipt" class="img-fluid rounded" style="max-height: 600px;">
+                            <img src="{{ route('admin.receipts.preview', $receipt) }}" alt="Payment Receipt" class="img-fluid rounded" style="max-height: 600px;">
                         </div>
                     @elseif($receipt->mime_type === 'application/pdf')
                         <div class="ratio ratio-16x9" style="min-height: 500px;">
-                            <iframe src="{{ asset('storage/' . $receipt->file_path) }}" class="rounded"></iframe>
+                            <iframe src="{{ route('admin.receipts.preview', $receipt) }}" class="rounded"></iframe>
                         </div>
                     @else
                         <div class="text-center py-5">

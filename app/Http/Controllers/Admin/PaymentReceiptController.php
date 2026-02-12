@@ -73,20 +73,20 @@ class PaymentReceiptController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        // Mark the invoice as paid
+        // Mark the invoice as paid (skip PaymentReceived event — sendReceiptApproved handles the email)
         $this->invoiceService->markAsPaid(
             $receipt->invoice,
             'bank_transfer',
             'Receipt #' . $receipt->uuid,
-            $receipt->paymentLink
+            $receipt->paymentLink,
+            fireEvent: false
         );
 
         $this->auditService->log('receipt_approved', $receipt, $oldValues);
 
         $this->emailService->sendReceiptApproved($receipt);
 
-        return redirect()->route('admin.receipts.index')
-            ->with('success', 'Receipt approved and invoice marked as paid.');
+        return redirect()->route('admin.receipts.index')->with('success', 'Receipt approved and invoice marked as paid.');
     }
 
     public function reject(Request $request, PaymentReceipt $receipt): RedirectResponse
@@ -114,6 +114,18 @@ class PaymentReceiptController extends Controller
 
         return redirect()->route('admin.receipts.index')
             ->with('success', 'Receipt rejected. Customer can upload a new receipt.');
+    }
+
+    /**
+     * Display the receipt file inline (for img/iframe src).
+     */
+    public function preview(PaymentReceipt $receipt)
+    {
+        if (!Storage::disk('public')->exists($receipt->file_path)) {
+            abort(404, 'Receipt file not found.');
+        }
+
+        return Storage::disk('public')->response($receipt->file_path);
     }
 
     /**
