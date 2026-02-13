@@ -118,7 +118,7 @@ class RetellService
             'ended_at'          => $callLog->ended_at ?? now(),
             'duration_seconds'  => $durationSeconds,
             'duration_minutes'  => $durationSeconds !== null ? round($durationSeconds / 60, 2) : $callLog->duration_minutes,
-            'retell_cost'       => isset($callData['call_cost']['combined_cost']) ? (int) round($callData['call_cost']['combined_cost'] / 100) : $callLog->retell_cost,
+            'retell_cost'       => isset($callData['call_cost']['combined_cost']) ? round($callData['call_cost']['combined_cost'] / 100) : $callLog->retell_cost,
             'transcript'        => isset($callData['transcript_object']) ? json_encode($this->formatRetellTranscript($callData['transcript_object'])) : $callLog->transcript,
             'summary'           => $callData['call_analysis']['call_summary'] ?? $callLog->summary,
             'sentiment'         => $callData['call_analysis']['user_sentiment'] ?? $callLog->sentiment,
