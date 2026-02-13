@@ -18,6 +18,8 @@ use App\Http\Controllers\Customer\DashboardController as CustomerDashboardContro
 use App\Http\Controllers\Customer\AgentController as CustomerAgentController;
 use App\Http\Controllers\Customer\InvoiceController as CustomerInvoiceController;
 use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;
+use App\Http\Controllers\CallLogController;
+use App\Http\Controllers\Customer\CallLogController as CustomerCallLogController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -74,6 +76,11 @@ Route::middleware('auth')->prefix('profile')->name('profile.')->group(function (
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password');
 });
 
+// Shared call details JSON endpoint (used by admin and customer agent show pages)
+Route::middleware('auth')->group(function () {
+    Route::get('calls/{callLog}', [CallLogController::class, 'show'])->name('calls.details');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Admin Routes
@@ -92,7 +99,6 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
 
     // Agent Management
     Route::resource('agents', AdminAgentController::class);
-    Route::get('agents/{agent}/calls/{callLog}', [AdminAgentController::class, 'callDetails'])->name('agents.calls.details');
 
     // Plan Management
     Route::resource('plans', PlanController::class);
@@ -137,7 +143,10 @@ Route::prefix('customer')->middleware(['auth', 'customer'])->name('customer.')->
     // Agents
     Route::get('agents', [CustomerAgentController::class, 'index'])->name('agents.index');
     Route::get('agents/{agent}', [CustomerAgentController::class, 'show'])->name('agents.show');
-    Route::get('agents/{agent}/calls/{callLog}', [CustomerAgentController::class, 'callDetails'])->name('agents.calls.details');
+
+    // Call Logs
+    Route::get('agents/{agent}/calls', [CustomerCallLogController::class, 'index'])->name('calls.index');
+    Route::get('calls/{callLog}', [CustomerCallLogController::class, 'show'])->name('calls.show');
 
     // Billing - Invoices
     Route::get('invoices', [CustomerInvoiceController::class, 'index'])->name('invoices.index');

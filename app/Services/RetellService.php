@@ -85,13 +85,20 @@ class RetellService
             $callLog = $this->handleCallStarted($agent, $callData);
         }
 
+        $durationSeconds = isset($callData['duration_ms'])
+            ? (int) round($callData['duration_ms'] / 1000)
+            : null;
+
         $callLog->update([
             'call_status' => 'ended',
             'ended_at' => now(),
-            'duration_seconds' => $callData['duration_seconds'] ?? null,
-            'duration_minutes' => isset($callData['duration_seconds'])
-                ? round($callData['duration_seconds'] / 60, 2)
+            'duration_seconds' => $durationSeconds,
+            'duration_minutes' => $durationSeconds !== null
+                ? round($durationSeconds / 60, 2)
                 : null,
+            'retell_cost' => $callData['call_cost']['combined_cost'] ?? null,
+            'transcript' => isset($callData['transcript_object']) ? json_encode($callData['transcript_object']) : null,
+            'metadata' => $callData,
         ]);
     }
 
@@ -103,18 +110,22 @@ class RetellService
             $callLog = $this->handleCallStarted($agent, $callData);
         }
 
+        $durationSeconds = isset($callData['duration_ms'])
+            ? (int) round($callData['duration_ms'] / 1000)
+            : $callLog->duration_seconds;
+
         $callLog->update([
             'call_status' => 'analyzed',
             'ended_at' => $callLog->ended_at ?? now(),
-            'duration_seconds' => $callData['duration_seconds'] ?? $callLog->duration_seconds,
-            'duration_minutes' => isset($callData['duration_seconds'])
-                ? round($callData['duration_seconds'] / 60, 2)
+            'duration_seconds' => $durationSeconds,
+            'duration_minutes' => $durationSeconds !== null
+                ? round($durationSeconds / 60, 2)
                 : $callLog->duration_minutes,
-            'retell_cost' => $callData['cost'] ?? null,
-            'transcript' => isset($callData['transcript']) ? json_encode($callData['transcript']) : null,
-            'summary' => $callData['summary'] ?? null,
-            'sentiment' => $callData['sentiment'] ?? null,
-            'recording_url' => $callData['recording_url'] ?? null,
+            'retell_cost' => $callData['call_cost']['combined_cost'] ?? $callLog->retell_cost,
+            'transcript' => isset($callData['transcript_object']) ? json_encode($callData['transcript_object']) : $callLog->transcript,
+            'summary' => $callData['call_analysis']['call_summary'] ?? $callLog->summary,
+            'sentiment' => $callData['call_analysis']['user_sentiment'] ?? $callLog->sentiment,
+            'recording_url' => $callData['recording_url'] ?? $callLog->recording_url,
             'analyzed_at' => now(),
             'metadata' => $callData,
         ]);

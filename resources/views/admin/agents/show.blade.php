@@ -289,7 +289,7 @@
                                     <td>
                                         <button type="button"
                                                 class="btn btn-icon btn-ghost-primary btn-sm view-call-btn"
-                                                data-call-id="{{ $call->id }}"
+                                                data-call-uuid="{{ $call->uuid }}"
                                                 data-bs-toggle="offcanvas"
                                                 data-bs-target="#callDetailsOffcanvas"
                                                 title="View Details">
@@ -339,23 +339,22 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const agentId = {{ $agent->id }};
     const viewCallBtns = document.querySelectorAll('.view-call-btn');
     const loader = document.getElementById('callDetailsLoader');
     const dataContainer = document.getElementById('callDetailsData');
 
     viewCallBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            const callId = this.dataset.callId;
-            loadCallDetails(callId);
+            const callUuid = this.dataset.callUuid;
+            loadCallDetails(callUuid);
         });
     });
 
-    function loadCallDetails(callId) {
+    function loadCallDetails(callUuid) {
         loader.classList.remove('d-none');
         dataContainer.classList.add('d-none');
 
-        fetch(`/admin/agents/${agentId}/calls/${callId}`)
+        fetch(`/calls/${callUuid}`)
             .then(response => response.json())
             .then(data => {
                 renderCallDetails(data);
