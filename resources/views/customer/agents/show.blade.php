@@ -246,7 +246,7 @@
                                     <td>
                                         <button type="button"
                                                 class="btn btn-icon btn-ghost-primary btn-sm view-call-btn"
-                                                data-call-id="{{ $call->id }}"
+                                                data-call-uuid="{{ $call->uuid }}"
                                                 data-bs-toggle="offcanvas"
                                                 data-bs-target="#callDetailsOffcanvas"
                                                 title="View Details">
