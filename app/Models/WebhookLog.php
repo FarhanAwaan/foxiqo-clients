@@ -32,7 +32,7 @@ class WebhookLog extends Model
     {
         $this->update([
             'status' => 'failed',
-            'error_message' => $message,
+            'error_message' => mb_substr($message, 0, 60000),
             'retry_count' => $this->retry_count + 1,
         ]);
     }
