@@ -296,23 +296,22 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const agentId = {{ $agent->id }};
     const viewCallBtns = document.querySelectorAll('.view-call-btn');
     const loader = document.getElementById('callDetailsLoader');
     const dataContainer = document.getElementById('callDetailsData');
 
     viewCallBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            const callId = this.dataset.callId;
-            loadCallDetails(callId);
+            const callUuid = this.dataset.callUuid;
+            loadCallDetails(callUuid);
         });
     });
 
-    function loadCallDetails(callId) {
+    function loadCallDetails(callUuid) {
         loader.classList.remove('d-none');
         dataContainer.classList.add('d-none');
 
-        fetch(`/customer/agents/${agentId}/calls/${callId}`)
+        fetch(`/calls/${callUuid}`)
             .then(response => response.json())
             .then(data => {
                 renderCallDetails(data);
@@ -342,11 +341,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (call.transcript && call.transcript.length > 0) {
             transcriptHtml = '<div class="transcript-container mt-3">';
             call.transcript.forEach(item => {
-                const isAgent = item.role === 'agent';
+                const isAgent = item.speaker === 'agent';
                 transcriptHtml += `
                     <div class="transcript-item ${isAgent ? 'transcript-agent' : 'transcript-user'}">
                         <div class="transcript-role">${isAgent ? 'Agent' : 'Customer'}</div>
-                        <div class="transcript-text">${item.content || item.text || ''}</div>
+                        <div class="transcript-text">${item.message || item.text || ''}</div>
                     </div>
                 `;
             });
@@ -413,6 +412,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="col-6">
                         <div class="datagrid-item">
+                            <div class="datagrid-title">Cost</div>
+                            <div class="datagrid-content text-money">$${parseFloat(call.retell_cost || 0).toFixed(4)}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="datagrid-item">
                             <div class="datagrid-title">Sentiment</div>
                             <div class="datagrid-content">${sentimentBadge || '-'}</div>
                         </div>
@@ -437,6 +442,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${transcriptHtml}
                 </div>
             ` : ''}
+
+            <div class="text-muted small mt-4">
+                <strong>Retell Call ID:</strong> <code>${call.retell_call_id || '-'}</code>
+            </div>
         `;
     }
 });
