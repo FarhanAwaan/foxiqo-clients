@@ -384,11 +384,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (call.transcript && call.transcript.length > 0) {
             transcriptHtml = '<div class="transcript-container mt-3">';
             call.transcript.forEach(item => {
-                const isAgent = item.role === 'agent';
+                const isAgent = item.speaker === 'agent';
                 transcriptHtml += `
                     <div class="transcript-item ${isAgent ? 'transcript-agent' : 'transcript-user'}">
                         <div class="transcript-role">${isAgent ? 'Agent' : 'Customer'}</div>
-                        <div class="transcript-text">${item.content || item.text || ''}</div>
+                        <div class="transcript-text">${item.message || item.text || ''}</div>
                     </div>
                 `;
             });

@@ -35,7 +35,7 @@ class CallLog extends Model
     public function getTranscriptArrayAttribute(): array
     {
         if (empty($this->transcript)) return [];
-        return $this->formatTranscriptForDisplay(json_decode($this->transcript, true)) ?? [];
+        return json_decode($this->transcript, true) ?? [];
     }
 
     public function getDurationFormattedAttribute(): string
