@@ -101,6 +101,22 @@
                 </div>
             </div>
 
+            <!-- Webhook URL -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Webhook URL</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{{ $agent->getWebhookUrl() }}" id="webhook-url" readonly>
+                        <button class="btn btn-outline-primary" type="button" onclick="copyToClipboard('webhook-url', event)" title="Copy URL">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
+                        </button>
+                    </div>
+                    <div class="form-hint mt-2">Use this URL in Retell as the webhook endpoint for this assistant.</div>
+                </div>
+            </div>
+
             <!-- Stats Card -->
             <div class="card">
                 <div class="card-header">

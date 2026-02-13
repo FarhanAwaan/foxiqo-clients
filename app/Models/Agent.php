@@ -64,4 +64,9 @@ class Agent extends Model
     {
         return $this->callLogs()->where('direction', 'outbound')->count();
     }
+
+    public function getWebhookUrl(): string
+    {
+        return url("/api/webhooks/retell/company/{$this->company->uuid}/agent/{$this->uuid}");
+    }
 }

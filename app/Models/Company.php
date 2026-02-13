@@ -38,9 +38,12 @@ class Company extends Model
         return $this->webhook_signature;
     }
 
+    /**
+     * @deprecated Webhook URLs are now per-agent. Use Agent::getWebhookUrl() instead.
+     */
     public function getWebhookUrl(): string
     {
-        return url("/api/webhooks/{$this->id}/retell");
+        return url("/api/webhooks/retell/company/{$this->uuid}");
     }
 
     public function users(): HasMany

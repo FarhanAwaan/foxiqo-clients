@@ -124,39 +124,26 @@
                 </div>
             </div>
 
-            <!-- Webhook Integration -->
+            <!-- Webhook URLs -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Webhook Integration</h3>
+                    <h3 class="card-title">Webhook URLs</h3>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Webhook URL</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" value="{{ $company->getWebhookUrl() }}" id="webhook-url" readonly>
-                            <button class="btn btn-outline-primary" type="button" onclick="copyToClipboard('webhook-url', event)" title="Copy URL">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
-                            </button>
+                    <div class="form-hint mb-3">Each assistant has a unique webhook URL. Use it in Retell as the webhook endpoint.</div>
+                    @forelse($company->agents as $agent)
+                        <div class="mb-3">
+                            <label class="form-label mb-1">{{ $agent->name }}</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="{{ $agent->getWebhookUrl() }}" id="webhook-url-{{ $agent->uuid }}" readonly>
+                                <button class="btn btn-outline-primary" type="button" onclick="copyToClipboard('webhook-url-{{ $agent->uuid }}', event)" title="Copy URL">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
+                                </button>
+                            </div>
                         </div>
-                        <div class="form-hint">Use this URL in Retell or n8n as the webhook endpoint.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Webhook Signature</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" value="{{ $company->webhook_signature }}" id="webhook-signature" readonly>
-                            <button class="btn btn-outline-primary" type="button" onclick="copyToClipboard('webhook-signature', event)" title="Copy Signature">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
-                            </button>
-                        </div>
-                        <div class="form-hint">Set this as the <code>X-Webhook-Signature</code> header in your webhook source.</div>
-                    </div>
-                    <form action="{{ route('admin.companies.regenerate-webhook', $company) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure? This will invalidate the current signature and any existing integrations will stop working.')">
-                        @csrf
-                        <button type="submit" class="btn btn-sm btn-outline-warning">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
-                            Regenerate Signature
-                        </button>
-                    </form>
+                    @empty
+                        <div class="text-muted">No assistants yet. Add an assistant to get a webhook URL.</div>
+                    @endforelse
                 </div>
             </div>
         </div>

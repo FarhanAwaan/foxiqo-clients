@@ -33,16 +33,22 @@ class RetellService
         $eventType = $payload['event'] ?? null;
         $callData = $payload['call'] ?? [];
         $callId = $callData['call_id'] ?? null;
-        $agentId = $callData['agent_id'] ?? null;
 
-        if (!$callId || !$agentId) {
-            throw new \Exception('Invalid webhook payload: missing call_id or agent_id');
+        if (!$callId) {
+            throw new \Exception('Invalid webhook payload: missing call_id');
         }
 
-        $agent = Agent::where('retell_agent_id', $agentId)->first();
+        // Use pre-validated agent from URL-based authentication
+        $agentId = $payload['_agent_id'] ?? null;
+        $agent = $agentId ? Agent::find($agentId) : null;
+
+        // Fallback to retell_agent_id lookup for backward compatibility
+        if (!$agent && isset($callData['agent_id'])) {
+            $agent = Agent::where('retell_agent_id', $callData['agent_id'])->first();
+        }
 
         if (!$agent) {
-            throw new \Exception("Agent not found: {$agentId}");
+            throw new \Exception("Agent not found for webhook: call_id={$callId}");
         }
 
         match ($eventType) {

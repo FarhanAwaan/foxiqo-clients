@@ -5,11 +5,12 @@ use App\Http\Controllers\Webhook\PayoneerWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Secured webhook routes — require X-Webhook-Signature header matching company's signature
-Route::prefix('webhooks/{company}')->middleware('webhook.verify')->group(function () {
-    Route::post('retell', [RetellWebhookController::class, 'handle']);
-});
+// Route::prefix('webhooks/{company}')->middleware('webhook.verify')->group(function () {
+//     Route::post('retell', [RetellWebhookController::class, 'handle']);
+// });
 
 // Payment provider webhooks (their own verification)
 Route::prefix('webhooks')->group(function () {
+    Route::post('retell/company/{company_uid}/agent/{agent_uid}', [RetellWebhookController::class, 'handle']);
     Route::post('payoneer', [PayoneerWebhookController::class, 'handle']);
 });
