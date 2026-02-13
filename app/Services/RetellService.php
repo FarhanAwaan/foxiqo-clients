@@ -21,8 +21,7 @@ class RetellService
 
     public function getCallDetails(string $callId): array
     {
-        $response = Http::withToken($this->apiKey)
-            ->get("{$this->baseUrl}/v2/get-call/{$callId}");
+        $response = Http::withToken($this->apiKey)->get("{$this->baseUrl}/v2/get-call/{$callId}");
 
         return $response->json();
     }
@@ -79,7 +78,7 @@ class RetellService
 
     protected function handleCallEnded(Agent $agent, array $callData): void
     {
-        $callLog = CallLog::where('retell_call_id', $callData['call_id'])->first();
+        $callLog = CallLog::where('retell_call_id', $callData['call_id'])->where('call_status', 'started')->first();
 
         if (!$callLog) {
             $callLog = $this->handleCallStarted($agent, $callData);
@@ -115,19 +114,17 @@ class RetellService
             : $callLog->duration_seconds;
 
         $callLog->update([
-            'call_status' => 'analyzed',
-            'ended_at' => $callLog->ended_at ?? now(),
-            'duration_seconds' => $durationSeconds,
-            'duration_minutes' => $durationSeconds !== null
-                ? round($durationSeconds / 60, 2)
-                : $callLog->duration_minutes,
-            'retell_cost' => $callData['call_cost']['combined_cost'] ?? $callLog->retell_cost,
-            'transcript' => isset($callData['transcript_object']) ? json_encode($callData['transcript_object']) : $callLog->transcript,
-            'summary' => $callData['call_analysis']['call_summary'] ?? $callLog->summary,
-            'sentiment' => $callData['call_analysis']['user_sentiment'] ?? $callLog->sentiment,
-            'recording_url' => $callData['recording_url'] ?? $callLog->recording_url,
-            'analyzed_at' => now(),
-            'metadata' => $callData,
+            'call_status'       => 'analyzed',
+            'ended_at'          => $callLog->ended_at ?? now(),
+            'duration_seconds'  => $durationSeconds,
+            'duration_minutes'  => $durationSeconds !== null ? round($durationSeconds / 60, 2) : $callLog->duration_minutes,
+            'retell_cost'       => isset($callData['call_cost']['combined_cost']) ? (int) round($callData['call_cost']['combined_cost'] / 100) : $callLog->retell_cost,
+            'transcript'        => isset($callData['transcript_object']) ? json_encode($this->formatRetellTranscript($callData['transcript_object'])) : $callLog->transcript,
+            'summary'           => $callData['call_analysis']['call_summary'] ?? $callLog->summary,
+            'sentiment'         => $callData['call_analysis']['user_sentiment'] ?? $callLog->sentiment,
+            'recording_url'     => $callData['recording_url'] ?? $callLog->recording_url,
+            'analyzed_at'       => now(),
+            'metadata'          => $callData,
         ]);
 
         $this->updateSubscriptionMinutes($agent, $callLog);
@@ -156,5 +153,30 @@ class RetellService
 
             event(new CircuitBreakerTriggered($subscription));
         }
+    }
+
+    /**
+    * Format Retell transcript before saving to DB
+    */
+    public function formatRetellTranscript(?array $transcriptObject): ?array
+    {
+        if (empty($transcriptObject)) {
+            return null;
+        }
+
+        $formatted = [];
+
+        foreach ($transcriptObject as $entry) {
+            if (!isset($entry['role']) || !isset($entry['content'])) {
+                continue;
+            }
+
+            $formatted[] = [
+                'speaker' => $entry['role'],
+                'message' => $entry['content'],
+            ];
+        }
+
+        return $formatted;
     }
 }

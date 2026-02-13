@@ -35,7 +35,7 @@ class CallLog extends Model
     public function getTranscriptArrayAttribute(): array
     {
         if (empty($this->transcript)) return [];
-        return json_decode($this->transcript, true) ?? [];
+        return $this->formatTranscriptForDisplay(json_decode($this->transcript, true)) ?? [];
     }
 
     public function getDurationFormattedAttribute(): string
@@ -54,5 +54,26 @@ class CallLog extends Model
     public function scopeForPeriod($query, $start, $end)
     {
         return $query->whereBetween('started_at', [$start, $end]);
+    }
+
+    /**
+    * Convert transcript for readable UI display
+    */
+    public function formatTranscriptForDisplay(?array $transcript): ?string
+    {
+        if (empty($transcript)) {
+            return null;
+        }
+
+        $output = '';
+
+        foreach ($transcript as $line) {
+            $role = ucfirst($line['speaker']);
+            $message = $line['message'];
+
+            $output .= "{$role}:\n{$message}\n\n";
+        }
+
+        return trim($output);
     }
 }
