@@ -147,19 +147,19 @@
 
                             @if(is_array($transcript))
                                 @foreach($transcript as $message)
-                                    <div class="d-flex mb-3 {{ ($message['role'] ?? '') === 'agent' ? '' : 'flex-row-reverse' }}">
-                                        <div class="avatar avatar-sm {{ ($message['role'] ?? '') === 'agent' ? 'bg-primary-lt' : 'bg-secondary-lt' }} me-2 ms-2">
-                                            @if(($message['role'] ?? '') === 'agent')
+                                    <div class="d-flex mb-3 {{ ($message['speaker'] ?? '') === 'agent' ? '' : 'flex-row-reverse' }}">
+                                        <div class="avatar avatar-sm {{ ($message['speaker'] ?? '') === 'agent' ? 'bg-primary-lt' : 'bg-secondary-lt' }} me-2 ms-2">
+                                            @if(($message['speaker'] ?? '') === 'agent')
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg>
                                             @else
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
                                             @endif
                                         </div>
-                                        <div class="{{ ($message['role'] ?? '') === 'agent' ? 'bg-primary-lt' : 'bg-light' }} rounded p-3" style="max-width: 80%;">
+                                        <div class="{{ ($message['speaker'] ?? '') === 'agent' ? 'bg-primary-lt' : 'bg-light' }} rounded p-3" style="max-width: 80%;">
                                             <div class="small text-muted mb-1">
-                                                {{ ($message['role'] ?? '') === 'agent' ? 'AI Agent' : 'Customer' }}
+                                                {{ ($message['speaker'] ?? '') === 'agent' ? 'AI Agent' : 'Customer' }}
                                             </div>
-                                            <div>{{ $message['content'] ?? $message['text'] ?? '' }}</div>
+                                            <div>{{ $message['message'] ?? $message['text'] ?? '' }}</div>
                                         </div>
                                     </div>
                                 @endforeach
