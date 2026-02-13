@@ -412,12 +412,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="col-6">
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Cost</div>
-                            <div class="datagrid-content text-money">$${parseFloat(call.retell_cost || 0).toFixed(4)}</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="datagrid-item">
                             <div class="datagrid-title">Sentiment</div>
                             <div class="datagrid-content">${sentimentBadge || '-'}</div>
                         </div>
@@ -442,10 +436,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${transcriptHtml}
                 </div>
             ` : ''}
-
-            <div class="text-muted small mt-4">
-                <strong>Retell Call ID:</strong> <code>${call.retell_call_id || '-'}</code>
-            </div>
         `;
     }
 });
