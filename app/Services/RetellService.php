@@ -32,6 +32,11 @@ class RetellService
         $eventType = $payload['event'] ?? null;
         $callData = $payload['call'] ?? [];
         $callId = $callData['call_id'] ?? null;
+        $callType = $callData['call_type'] ?? null;
+
+        if($callType == 'web_call') {
+            throw new \Exception("Web call is not supposed to be logged: call_id={$callId}");
+        }
 
         if (!$callId) {
             throw new \Exception('Invalid webhook payload: missing call_id');
