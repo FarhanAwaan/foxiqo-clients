@@ -780,3 +780,28 @@ a:hover {
     height: 1rem;
     margin-right: 0.5rem;
 }
+
+/* ============================================
+   Custom grid for agent stats and Retell ID
+   ============================================ */
+.datagrid.custom-grid {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.datagrid.custom-grid > .datagrid-item {
+    /* flex: 0 0 50%; */
+    max-width: 50%;
+    box-sizing: border-box;
+    min-width: 0; /* important, allows children to shrink */
+}
+
+.datagrid.custom-grid > .datagrid-item:last-child {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+/* prevent the Retell ID from clipping */
+.datagrid.custom-grid code.text-truncate {
+    max-width: 100% !important;
+}

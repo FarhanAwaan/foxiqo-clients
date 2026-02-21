@@ -29,11 +29,11 @@
 
         {{-- Left: Agent Info + Webhook URL --}}
         <div class="col-lg-4">
-            <div class="card h-auto">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <span class="avatar avatar-xl bg-primary-lt">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="avatar avatar-md bg-primary-lt me-3 flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                                 <path d="M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4"></path>
                                 <path d="M12 2v2"></path>
@@ -46,11 +46,13 @@
                                 <path d="M14 8v.01"></path>
                             </svg>
                         </span>
+                        <div class="flex-fill" style="min-width: 0;">
+                            <h3 class="card-title mb-1 text-truncate">{{ $agent->name }}</h3>
+                            <div class="text-muted small">
+                                <a href="{{ route('admin.companies.show', $agent->company) }}" class="text-reset">{{ $agent->company->name }}</a>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="card-title mb-1">{{ $agent->name }}</h3>
-                    <p class="text-muted mb-2">
-                        <a href="{{ route('admin.companies.show', $agent->company) }}">{{ $agent->company->name }}</a>
-                    </p>
                     <div class="mb-3">
                         @switch($agent->status)
                             @case('active')
@@ -62,42 +64,44 @@
                             @default
                                 <span class="badge bg-secondary-lt">Archived</span>
                         @endswitch
-                    </div>
-                </div>
-                <div class="card-body border-top">
-                    <div class="datagrid">
+                        @switch($agent->agent_type)
+                            @case('inbound')
+                                <span class="badge bg-blue-lt">Inbound</span>
+                                @break
+                            @case('outbound')
+                                <span class="badge bg-cyan-lt">Outbound</span>
+                                @break
+                            @default
+                                <span class="badge bg-purple-lt">Both</span>
+                        @endswitch
                         @if($agent->phone_number)
-                            <div class="datagrid-item">
-                                <div class="datagrid-title">Phone Number</div>
-                                <div class="datagrid-content">{{ $agent->phone_number }}</div>
-                            </div>
+                            <span class="text-muted small ms-1">{{ $agent->phone_number }}</span>
                         @endif
-                        <div class="datagrid-item">
-                            <div class="datagrid-title">Type</div>
-                            <div class="datagrid-content">
-                                @switch($agent->agent_type)
-                                    @case('inbound')
-                                        <span class="badge bg-blue-lt">Inbound Only</span>
-                                        @break
-                                    @case('outbound')
-                                        <span class="badge bg-green-lt">Outbound Only</span>
-                                        @break
-                                    @default
-                                        <span class="badge bg-purple-lt">Inbound & Outbound</span>
-                                @endswitch
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">Cost / Min</div>
+                                <div class="datagrid-content text-money">${{ number_format($agent->cost_per_minute, 4) }}</div>
                             </div>
                         </div>
-                        <div class="datagrid-item">
-                            <div class="datagrid-title">Retell Agent ID</div>
-                            <div class="datagrid-content"><code class="small">{{ $agent->retell_agent_id }}</code></div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">Created</div>
+                                <div class="datagrid-content">{{ $agent->created_at->format('M d, Y') }}</div>
+                            </div>
                         </div>
-                        <div class="datagrid-item">
-                            <div class="datagrid-title">Cost Per Minute</div>
-                            <div class="datagrid-content text-money">${{ number_format($agent->cost_per_minute, 4) }}</div>
-                        </div>
-                        <div class="datagrid-item">
-                            <div class="datagrid-title">Created</div>
-                            <div class="datagrid-content">{{ $agent->created_at->format('M d, Y') }}</div>
+
+                        <div class="col-12">
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">Retell Agent ID</div>
+                                <div class="datagrid-content">
+                                    <code class="small text-truncate" title="{{ $agent->retell_agent_id }}">
+                                        {{ $agent->retell_agent_id }}
+                                    </code>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

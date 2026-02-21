@@ -24,10 +24,10 @@
         {{-- Left: Agent Info --}}
         <div class="col-lg-4">
             <div class="card">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <span class="avatar avatar-xl bg-primary-lt">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="avatar avatar-md bg-primary-lt me-3 flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                                 <path d="M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4"></path>
                                 <path d="M12 2v2"></path>
@@ -40,11 +40,13 @@
                                 <path d="M14 8v.01"></path>
                             </svg>
                         </span>
+                        <div class="flex-fill" style="min-width: 0;">
+                            <h3 class="card-title mb-1 text-truncate">{{ $agent->name }}</h3>
+                            @if($agent->phone_number)
+                                <div class="text-muted small">{{ $agent->phone_number }}</div>
+                            @endif
+                        </div>
                     </div>
-                    <h3 class="card-title mb-1">{{ $agent->name }}</h3>
-                    @if($agent->phone_number)
-                        <p class="text-muted mb-2">{{ $agent->phone_number }}</p>
-                    @endif
                     <div class="mb-3">
                         @switch($agent->status)
                             @case('active')
@@ -56,24 +58,21 @@
                             @default
                                 <span class="badge bg-secondary-lt">Archived</span>
                         @endswitch
-
                         @switch($agent->agent_type)
                             @case('inbound')
-                                <span class="badge bg-blue-lt">Inbound Only</span>
+                                <span class="badge bg-blue-lt">Inbound</span>
                                 @break
                             @case('outbound')
-                                <span class="badge bg-cyan-lt">Outbound Only</span>
+                                <span class="badge bg-cyan-lt">Outbound</span>
                                 @break
                             @default
-                                <span class="badge bg-purple-lt">Inbound & Outbound</span>
+                                <span class="badge bg-purple-lt">Both</span>
                         @endswitch
                     </div>
+                    @if($agent->description)
+                        <p class="text-muted small mb-0">{{ $agent->description }}</p>
+                    @endif
                 </div>
-                @if($agent->description)
-                    <div class="card-body border-top">
-                        <p class="text-muted mb-0">{{ $agent->description }}</p>
-                    </div>
-                @endif
             </div>
         </div>
 
