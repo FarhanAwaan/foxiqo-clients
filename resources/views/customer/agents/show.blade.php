@@ -123,17 +123,24 @@
                                     <span class="text-muted fw-normal fs-5 ms-1">${{ number_format($agent->subscription->custom_price ?? $agent->subscription->plan->price, 2) }}/mo</span>
                                 </h3>
                                 <div class="text-secondary small">
-                                    @switch($agent->subscription->status)
-                                        @case('active')
-                                            <span class="badge bg-green-lt me-1">Active</span>
-                                            @break
-                                        @case('pending')
-                                            <span class="badge bg-yellow-lt me-1">Pending</span>
-                                            @break
-                                        @default
-                                            <span class="badge bg-secondary-lt me-1">{{ ucfirst($agent->subscription->status) }}</span>
-                                    @endswitch
-                                    Renews {{ $agent->subscription->current_period_end?->format('M d, Y') ?? '-' }}
+                                    @if($agent->subscription->isTrial())
+                                        <span class="badge bg-purple-lt me-1">
+                                            Free Trial — {{ $agent->subscription->trialDaysRemaining() }}d left
+                                        </span>
+                                        Ends {{ $agent->subscription->trial_ends_at?->format('M d, Y') ?? '-' }}
+                                    @else
+                                        @switch($agent->subscription->status)
+                                            @case('active')
+                                                <span class="badge bg-green-lt me-1">Active</span>
+                                                @break
+                                            @case('pending')
+                                                <span class="badge bg-yellow-lt me-1">Pending</span>
+                                                @break
+                                            @default
+                                                <span class="badge bg-secondary-lt me-1">{{ ucfirst($agent->subscription->status) }}</span>
+                                        @endswitch
+                                        Renews {{ $agent->subscription->current_period_end?->format('M d, Y') ?? '-' }}
+                                    @endif
                                 </div>
                                 <div class="mt-3">
                                     <div class="row g-2 align-items-center">

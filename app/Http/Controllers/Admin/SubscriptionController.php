@@ -55,22 +55,32 @@ class SubscriptionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'agent_id' => ['required', 'exists:agents,id', 'unique:subscriptions,agent_id'],
-            'plan_id' => ['required', 'exists:plans,id'],
+            'agent_id'    => ['required', 'exists:agents,id', 'unique:subscriptions,agent_id'],
+            'plan_id'     => ['required', 'exists:plans,id'],
             'custom_price' => ['nullable', 'numeric', 'min:0'],
+            'is_trial'    => ['nullable', 'boolean'],
+            'trial_days'  => ['nullable', 'integer', 'min:1', 'max:365'],
         ]);
 
         $agent = Agent::findOrFail($validated['agent_id']);
         $plan = Plan::findOrFail($validated['plan_id']);
+        $isTrial = !empty($validated['is_trial']);
+        $trialDays = (int) ($validated['trial_days'] ?? 30);
 
         $subscription = $this->subscriptionService->create(
             $agent,
             $plan,
-            $validated['custom_price'] ?? null
+            $validated['custom_price'] ?? null,
+            $isTrial,
+            $trialDays
         );
 
+        $message = $isTrial
+            ? "Free trial started. The assistant is now active for {$trialDays} days. A trial welcome email has been sent."
+            : 'Subscription created. Invoice and payment link have been sent to the customer.';
+
         return redirect()->route('admin.subscriptions.show', $subscription)
-            ->with('success', 'Subscription created. Invoice and payment link have been sent to the customer.');
+            ->with('success', $message);
     }
 
     public function show(Subscription $subscription): View

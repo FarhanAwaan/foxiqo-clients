@@ -6,7 +6,7 @@
 
         <h1 class="navbar-brand navbar-brand-autodark">
             <a href="{{ route('customer.dashboard') }}">
-                {{ config('app.name') }}
+                <img class="rounded-2" src="{{ asset('images/logos/logo.webp') }}" alt="{{ config('app.name') }}" style="max-height: 48px;">
             </a>
         </h1>
 

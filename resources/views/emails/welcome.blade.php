@@ -10,10 +10,10 @@
     </p>
 
     <p style="color:#495057; margin:0 0 24px; line-height:1.6;">
-        Your account has been successfully activated. You're all set to get started
-        @if($company)
+        Your account has been successfully activated. You're all set to get started!
+        {{-- @if($company)
             with <strong>{{ $company->name }}</strong>
-        @endif.
+        @endif. --}}
     </p>
 
     <!-- Account Details -->

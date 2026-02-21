@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
+use App\Models\User;
+
 class LoginController extends Controller
 {
     public function showForm(): View
@@ -23,6 +25,13 @@ class LoginController extends Controller
         ]);
 
         $remember = $request->boolean('remember');
+        $user = User::where('email', $credentials['email'])->first();
+        if($user && $user->email_verified_at === null) {
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'Please verify your email address - check your inbox for a verification email',
+            ])->onlyInput('email');
+        }
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();

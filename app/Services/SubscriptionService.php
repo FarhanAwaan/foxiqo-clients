@@ -18,13 +18,40 @@ class SubscriptionService
         protected EmailService $emailService
     ) {}
 
-    public function create(Agent $agent, Plan $plan, ?float $customPrice = null): Subscription
+    public function create(Agent $agent, Plan $plan, ?float $customPrice = null, bool $isTrial = false, int $trialDays = 30): Subscription
     {
+        if ($isTrial) {
+            $startDate = Carbon::today();
+            $trialEndsAt = $startDate->copy()->addDays($trialDays);
+
+            $subscription = Subscription::create([
+                'agent_id'              => $agent->id,
+                'company_id'            => $agent->company_id,
+                'plan_id'               => $plan->id,
+                'status'                => 'active',
+                'custom_price'          => $customPrice,
+                'is_trial'              => true,
+                'trial_days'            => $trialDays,
+                'trial_ends_at'         => $trialEndsAt,
+                'trial_ending_warned'   => false,
+                'current_period_start'  => $startDate,
+                'current_period_end'    => $trialEndsAt->toDateString(),
+                'minutes_used'          => 0,
+                'activated_at'          => now(),
+                'expires_at'            => $trialEndsAt->endOfDay(),
+            ]);
+
+            $this->auditService->log('subscription_trial_started', $subscription);
+            $this->emailService->sendTrialStarted($subscription);
+
+            return $subscription;
+        }
+
         $subscription = Subscription::create([
-            'agent_id' => $agent->id,
-            'company_id' => $agent->company_id,
-            'plan_id' => $plan->id,
-            'status' => 'pending',
+            'agent_id'    => $agent->id,
+            'company_id'  => $agent->company_id,
+            'plan_id'     => $plan->id,
+            'status'      => 'pending',
             'custom_price' => $customPrice,
         ]);
 
@@ -38,6 +65,35 @@ class SubscriptionService
         $this->emailService->sendSubscriptionCreated($subscription, $invoice, $paymentLink);
 
         return $subscription;
+    }
+
+    /**
+     * Convert an expired trial into a paid subscription.
+     * Creates the first invoice, sends payment link email, removes trial flag.
+     */
+    public function expireTrial(Subscription $subscription): void
+    {
+        $this->createBillingCycleSnapshot($subscription);
+
+        $startDate = Carbon::today();
+        $endDate = $startDate->copy()->addDays(30);
+
+        $subscription->update([
+            'is_trial'              => false,
+            'trial_ends_at'         => null,
+            'current_period_start'  => $startDate,
+            'current_period_end'    => $endDate,
+            'minutes_used'          => 0,
+            'circuit_breaker_triggered' => false,
+            'circuit_breaker_triggered_at' => null,
+            'expires_at'            => $endDate->endOfDay(),
+        ]);
+
+        $invoice = $this->invoiceService->createForSubscription($subscription);
+        $paymentLink = $this->invoiceService->createPaymentLink($invoice, false, false);
+
+        $this->auditService->log('subscription_trial_expired', $subscription);
+        $this->emailService->sendTrialExpired($subscription, $invoice, $paymentLink);
     }
 
     public function activate(Subscription $subscription): void

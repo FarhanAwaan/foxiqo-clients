@@ -14,6 +14,9 @@ use App\Mail\SubscriptionCancelledMail;
 use App\Mail\SubscriptionCreatedMail;
 use App\Mail\SubscriptionExpiryWarningMail;
 use App\Mail\SubscriptionRenewalMail;
+use App\Mail\TrialEndingMail;
+use App\Mail\TrialExpiredMail;
+use App\Mail\TrialStartedMail;
 use App\Mail\UsageAlertMail;
 use App\Mail\UserInvitationMail;
 use App\Mail\WelcomeMail;
@@ -251,6 +254,59 @@ class EmailService
             userId: $user->id,
             data: [
                 'user_id' => $user->id,
+            ]
+        );
+    }
+
+    public function sendTrialStarted(Subscription $subscription): void
+    {
+        $subscription->load(['company', 'agent', 'plan']);
+        $company = $subscription->company;
+
+        $this->createNotificationAndDispatch(
+            mailable: new TrialStartedMail($subscription),
+            recipientEmail: $company->effective_billing_email,
+            type: 'trial_started',
+            subject: "Your Free Trial Has Started: {$subscription->agent->name}",
+            body: "Your {$subscription->trial_days}-day free trial for {$subscription->agent->name} on the {$subscription->plan->name} plan has started. Trial ends {$subscription->trial_ends_at->format('M d, Y')}.",
+            companyId: $company->id,
+            data: ['subscription_id' => $subscription->id]
+        );
+    }
+
+    public function sendTrialEndingWarning(Subscription $subscription): void
+    {
+        $subscription->load(['company', 'agent', 'plan']);
+        $company = $subscription->company;
+        $daysLeft = $subscription->trialDaysRemaining();
+
+        $this->createNotificationAndDispatch(
+            mailable: new TrialEndingMail($subscription),
+            recipientEmail: $company->effective_billing_email,
+            type: 'trial_ending',
+            subject: "Your Trial Ends in {$daysLeft} Day(s): {$subscription->agent->name}",
+            body: "Your free trial for {$subscription->agent->name} ends on {$subscription->trial_ends_at->format('M d, Y')}. After that, a subscription invoice will be sent.",
+            companyId: $company->id,
+            data: ['subscription_id' => $subscription->id]
+        );
+    }
+
+    public function sendTrialExpired(Subscription $subscription, Invoice $invoice, PaymentLink $paymentLink): void
+    {
+        $subscription->load(['company', 'agent', 'plan']);
+        $company = $subscription->company;
+
+        $this->createNotificationAndDispatch(
+            mailable: new TrialExpiredMail($subscription, $invoice, $paymentLink),
+            recipientEmail: $company->effective_billing_email,
+            type: 'trial_expired',
+            subject: "Your Trial Has Ended — Payment Required: {$subscription->agent->name}",
+            body: "Your free trial for {$subscription->agent->name} has ended. Invoice {$invoice->invoice_number} for \${$invoice->amount} has been created.",
+            companyId: $company->id,
+            data: [
+                'subscription_id' => $subscription->id,
+                'invoice_id'      => $invoice->id,
+                'payment_link_id' => $paymentLink->id,
             ]
         );
     }

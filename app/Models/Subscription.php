@@ -16,6 +16,7 @@ class Subscription extends Model
         'current_period_start', 'current_period_end', 'minutes_used',
         'circuit_breaker_triggered', 'circuit_breaker_triggered_at',
         'activated_at', 'expires_at', 'cancelled_at', 'cancellation_reason',
+        'is_trial', 'trial_days', 'trial_ends_at', 'trial_ending_warned',
     ];
 
     protected $casts = [
@@ -27,6 +28,9 @@ class Subscription extends Model
         'activated_at' => 'datetime',
         'expires_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'is_trial' => 'boolean',
+        'trial_ends_at' => 'datetime',
+        'trial_ending_warned' => 'boolean',
     ];
 
     public function agent(): BelongsTo
@@ -75,6 +79,27 @@ class Subscription extends Model
         return $this->minutes_used > $this->plan->included_minutes;
     }
 
+    public function isTrial(): bool
+    {
+        return (bool) $this->is_trial;
+    }
+
+    public function isTrialActive(): bool
+    {
+        return $this->is_trial && $this->trial_ends_at && $this->trial_ends_at->isFuture();
+    }
+
+    public function isTrialExpired(): bool
+    {
+        return $this->is_trial && $this->trial_ends_at && $this->trial_ends_at->isPast();
+    }
+
+    public function trialDaysRemaining(): int
+    {
+        if (!$this->is_trial || !$this->trial_ends_at) return 0;
+        return max(0, (int) now()->diffInDays($this->trial_ends_at, false));
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -83,6 +108,22 @@ class Subscription extends Model
     public function scopeExpiringSoon($query, int $days = 7)
     {
         return $query->where('status', 'active')
+            ->where('is_trial', false)
             ->whereBetween('current_period_end', [now(), now()->addDays($days)]);
+    }
+
+    public function scopeTrialExpired($query)
+    {
+        return $query->where('status', 'active')
+            ->where('is_trial', true)
+            ->where('trial_ends_at', '<=', now());
+    }
+
+    public function scopeTrialEndingSoon($query, int $days = 3)
+    {
+        return $query->where('status', 'active')
+            ->where('is_trial', true)
+            ->where('trial_ending_warned', false)
+            ->whereBetween('trial_ends_at', [now(), now()->addDays($days)]);
     }
 }

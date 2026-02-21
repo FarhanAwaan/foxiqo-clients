@@ -83,6 +83,25 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Trial Period</label>
+                            <label class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="is_trial" id="isTrialToggle" value="1" {{ old('is_trial') ? 'checked' : '' }}>
+                                <span class="form-check-label">Enable free trial (no invoice, assistant starts immediately)</span>
+                            </label>
+                            <div id="trialDaysWrapper" style="{{ old('is_trial') ? '' : 'display:none;' }}">
+                                <div class="input-group" style="max-width: 200px;">
+                                    <input type="number" name="trial_days" id="trialDaysInput" min="1" max="365"
+                                           class="form-control @error('trial_days') is-invalid @enderror"
+                                           value="{{ old('trial_days', 30) }}" placeholder="30">
+                                    <span class="input-group-text">days</span>
+                                </div>
+                                @error('trial_days')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -110,6 +129,10 @@
                                     <div class="datagrid-title">Included Minutes</div>
                                     <div class="datagrid-content" id="summaryMinutes">-</div>
                                 </div>
+                                <div class="datagrid-item" id="summaryTrialRow" style="display:none;">
+                                    <div class="datagrid-title">Trial Period</div>
+                                    <div class="datagrid-content" id="summaryTrial">-</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -123,7 +146,7 @@
                     </div>
                 </div>
 
-                <div class="alert alert-info">
+                <div id="alertNormal" class="alert alert-info">
                     <div class="d-flex">
                         <div>
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 9h.01" /><path d="M11 12h1v4h1" /></svg>
@@ -132,6 +155,19 @@
                             <h4 class="alert-title">Note</h4>
                             <div class="text-muted">
                                 The subscription will be created in <strong>Pending</strong> status. You'll need to activate it to start the billing period and generate the first invoice.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="alertTrial" class="alert alert-success" style="display:none;">
+                    <div class="d-flex">
+                        <div>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                        </div>
+                        <div>
+                            <h4 class="alert-title">Free Trial</h4>
+                            <div class="text-muted">
+                                The subscription will be <strong>immediately active</strong>. No invoice will be created. A trial welcome email will be sent to the customer.
                             </div>
                         </div>
                     </div>
@@ -198,12 +234,48 @@
         planSelect.addEventListener('change', updateSummary);
         customPriceInput.addEventListener('input', updateSummary);
 
+        // Trial toggle
+        const isTrialToggle = document.getElementById('isTrialToggle');
+        const trialDaysWrapper = document.getElementById('trialDaysWrapper');
+        const trialDaysInput = document.getElementById('trialDaysInput');
+        const alertNormal = document.getElementById('alertNormal');
+        const alertTrial = document.getElementById('alertTrial');
+        const submitBtn = document.querySelector('button[type="submit"]');
+
+        function updateTrialUI() {
+            const isTrial = isTrialToggle.checked;
+            trialDaysWrapper.style.display = isTrial ? '' : 'none';
+            alertNormal.style.display = isTrial ? 'none' : '';
+            alertTrial.style.display = isTrial ? '' : 'none';
+            submitBtn.textContent = isTrial ? 'Start Free Trial' : 'Create Subscription';
+            updateSummary();
+        }
+
+        isTrialToggle.addEventListener('change', updateTrialUI);
+        trialDaysInput.addEventListener('input', updateSummary);
+
+        // Override updateSummary to include trial info
+        const originalUpdateSummary = updateSummary;
+        updateSummary = function() {
+            originalUpdateSummary();
+            const trialRow = document.getElementById('summaryTrialRow');
+            const trialText = document.getElementById('summaryTrial');
+            if (isTrialToggle && isTrialToggle.checked) {
+                const days = parseInt(trialDaysInput.value) || 30;
+                trialRow.style.display = '';
+                trialText.innerHTML = `<span class="text-success">${days} days (free)</span>`;
+            } else if (trialRow) {
+                trialRow.style.display = 'none';
+            }
+        };
+
         // Trigger initial filter if company is pre-selected
         if (companySelect.value) {
             companySelect.dispatchEvent(new Event('change'));
         }
 
-        // Initial summary update
+        // Initial updates
+        updateTrialUI();
         updateSummary();
     });
 </script>

@@ -24,7 +24,7 @@
                     <tr>
                         <td style="background-color:#1a1a2e; padding:24px 32px; text-align:center;">
                             <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:600; letter-spacing:0.5px;">{{ config('app.name', 'Foxiqo') }}</h1>
-                            <p style="color:#a0a0c0; margin:4px 0 0; font-size:12px;">Voice AI Agent Platform</p>
+                            <p style="color:#a0a0c0; margin:4px 0 0; font-size:12px;">Transform Your Business with Foxiqo</p>
                         </td>
                     </tr>
 

@@ -7,6 +7,18 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - {{ config('app.name') }}</title>
 
+    {{-- Favicons --}}
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/logos/favicons/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/logos/favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ asset('images/logos/favicons/favicon-48x48.png') }}">
+    <link rel="icon" href="{{ asset('images/logos/favicons/favicon.ico') }}">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logos/favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logos/favicons/android-chrome-192x192.png') }}">
+    <link rel="manifest" href="{{ asset('images/logos/favicons/site.webmanifest') }}">
+    <meta name="msapplication-TileColor" content="#f26422">
+    <meta name="msapplication-TileImage" content="{{ asset('images/logos/favicons/android-chrome-192x192.png') }}">
+
     <!-- Tabler CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-vendors.min.css">
