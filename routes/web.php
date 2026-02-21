@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AgentController as AdminAgentController;
+use App\Http\Controllers\Admin\CallLogController as AdminCallLogController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -99,6 +100,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
 
     // Agent Management
     Route::resource('agents', AdminAgentController::class);
+    Route::get('agents/{agent}/calls', [AdminCallLogController::class, 'index'])->name('agents.calls.index');
 
     // Plan Management
     Route::resource('plans', PlanController::class);

@@ -26,11 +26,11 @@ class AgentController extends Controller
 
         $agent->load(['subscription.plan']);
 
-        // Get call logs with pagination
+        // Get latest 10 calls for the overview (full list available via calls.index)
         $callLogs = $agent->callLogs()
-            ->orderBy('started_at', 'asc')
-            ->paginate(15)
-            ->withQueryString();
+            ->latest('started_at')
+            ->limit(10)
+            ->get();
 
         // Calculate stats
         $totalCalls = $agent->callLogs()->count();

@@ -25,7 +25,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Call Information</h3>
                     <div class="card-actions">
-                        @switch($callLog->status)
+                        @switch($callLog->call_status)
                             @case('analyzed')
                                 <span class="badge bg-green-lt">Complete</span>
                                 @break
@@ -33,7 +33,7 @@
                                 <span class="badge bg-blue-lt">Ended</span>
                                 @break
                             @default
-                                <span class="badge bg-yellow-lt">{{ ucfirst($callLog->status) }}</span>
+                                <span class="badge bg-yellow-lt">{{ ucfirst($callLog->call_status) }}</span>
                         @endswitch
                     </div>
                 </div>
@@ -68,17 +68,6 @@
                         </div>
 
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Cost</div>
-                            <div class="datagrid-content">
-                                @if($callLog->cost)
-                                    <span class="text-money">${{ number_format($callLog->cost, 4) }}</span>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <div class="datagrid-item">
                             <div class="datagrid-title">Sentiment</div>
                             <div class="datagrid-content">
                                 @switch($callLog->sentiment)
@@ -100,15 +89,15 @@
                         <div class="datagrid-item">
                             <div class="datagrid-title">Started At</div>
                             <div class="datagrid-content">
-                                {{ $callLog->call_started_at ? $callLog->call_started_at->format('M d, Y h:i A') : $callLog->created_at->format('M d, Y h:i A') }}
+                                {{ $callLog->started_at ? $callLog->started_at->format('M d, Y h:i A') : $callLog->created_at->format('M d, Y h:i A') }}
                             </div>
                         </div>
 
-                        @if($callLog->call_ended_at)
+                        @if($callLog->ended_at)
                             <div class="datagrid-item">
                                 <div class="datagrid-title">Ended At</div>
                                 <div class="datagrid-content">
-                                    {{ $callLog->call_ended_at->format('M d, Y h:i A') }}
+                                    {{ $callLog->ended_at->format('M d, Y h:i A') }}
                                 </div>
                             </div>
                         @endif

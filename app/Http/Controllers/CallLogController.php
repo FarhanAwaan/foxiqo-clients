@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\CallLog;
+use App\Services\RetellService;
 use Illuminate\Http\JsonResponse;
 
 class CallLogController extends Controller
 {
+    public function __construct(
+        protected RetellService $retellService
+    ) {}
+
     public function show(CallLog $callLog): JsonResponse
     {
         $callLog->load('agent');
@@ -14,6 +19,19 @@ class CallLogController extends Controller
         // Customers can only view their own company's calls
         if (!auth()->user()->isAdmin() && $callLog->agent->company_id !== auth()->user()->company_id) {
             abort(404);
+        }
+
+        // Fetch a fresh recording URL from Retell API (stored URLs expire in ~10 minutes)
+        $recordingUrl = $callLog->recording_url;
+        if ($callLog->retell_call_id) {
+            try {
+                $retellData = $this->retellService->getCallDetails($callLog->retell_call_id);
+                if (!empty($retellData['recording_url'])) {
+                    $recordingUrl = $retellData['recording_url'];
+                }
+            } catch (\Exception $e) {
+                // Fall back to stored URL silently
+            }
         }
 
         $data = [
@@ -30,7 +48,7 @@ class CallLogController extends Controller
             'sentiment' => $callLog->sentiment,
             'summary' => $callLog->summary,
             'transcript' => $callLog->transcript_array,
-            'recording_url' => $callLog->recording_url,
+            'recording_url' => $recordingUrl,
         ];
 
         if (auth()->user()->isAdmin()) {

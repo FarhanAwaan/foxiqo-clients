@@ -23,11 +23,13 @@
 @endsection
 
 @section('content')
-    <div class="row">
 
-        <!-- Agent Info Sidebar -->
+    {{-- Row 1: Agent Info (left) + Stats & Subscription (right) --}}
+    <div class="row g-3 mb-3">
+
+        {{-- Left: Agent Info + Webhook URL --}}
         <div class="col-lg-4">
-            <div class="card">
+            <div class="card h-auto">
                 <div class="card-body text-center">
                     <div class="mb-3">
                         <span class="avatar avatar-xl bg-primary-lt">
@@ -101,7 +103,7 @@
                 </div>
             </div>
 
-            <!-- Webhook URL -->
+            {{-- Webhook URL --}}
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Webhook URL</h3>
@@ -116,100 +118,89 @@
                     <div class="form-hint mt-2">Use this URL in Retell as the webhook endpoint for this assistant.</div>
                 </div>
             </div>
+        </div>
 
-            <!-- Stats Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Statistics</h3>
-                </div>
+        {{-- Right: Statistics + Subscription stacked --}}
+        <div class="col-lg-8">
+            {{-- Statistics --}}
+            <div class="card mb-3">
                 <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="agent-stat text-center">
-                                <div class="agent-stat-value text-primary">{{ number_format($totalCalls) }}</div>
-                                <div class="agent-stat-label">Total Calls</div>
-                            </div>
+                    <div class="row row-cols-2 row-cols-sm-5 g-3 text-center">
+                        <div class="col">
+                            <div class="subheader">Total Calls</div>
+                            <div class="h2 text-primary mb-0 mt-1">{{ number_format($totalCalls) }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="agent-stat text-center">
-                                <div class="agent-stat-value text-green">{{ number_format($totalMinutes, 1) }}</div>
-                                <div class="agent-stat-label">Total Minutes</div>
-                            </div>
+                        <div class="col">
+                            <div class="subheader">Total Minutes</div>
+                            <div class="h2 text-green mb-0 mt-1">{{ number_format($totalMinutes, 1) }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="agent-stat text-center">
-                                <div class="agent-stat-value text-blue">{{ number_format($inboundCalls) }}</div>
-                                <div class="agent-stat-label">Inbound Calls</div>
-                            </div>
+                        <div class="col">
+                            <div class="subheader">Inbound</div>
+                            <div class="h2 text-blue mb-0 mt-1">{{ number_format($inboundCalls) }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="agent-stat text-center">
-                                <div class="agent-stat-value text-cyan">{{ number_format($outboundCalls) }}</div>
-                                <div class="agent-stat-label">Outbound Calls</div>
-                            </div>
+                        <div class="col">
+                            <div class="subheader">Outbound</div>
+                            <div class="h2 text-cyan mb-0 mt-1">{{ number_format($outboundCalls) }}</div>
                         </div>
-                        <div class="col-12">
-                            <div class="agent-stat text-center">
-                                <div class="agent-stat-value">{{ gmdate("i:s", (int)$avgDuration) }}</div>
-                                <div class="agent-stat-label">Avg Call Duration</div>
-                            </div>
+                        <div class="col">
+                            <div class="subheader">Avg Duration</div>
+                            <div class="h2 mb-0 mt-1">{{ gmdate("i:s", (int)$avgDuration) }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Calls List -->
-        <div class="col-lg-8">
-
-            <!-- Subscription Card -->
+            {{-- Subscription --}}
             @if($agent->subscription)
+                @php
+                    $used = $agent->subscription->minutes_used ?? 0;
+                    $included = $agent->subscription->plan->included_minutes ?? 1;
+                    $percent = min(100, ($used / $included) * 100);
+                    $barColor = $percent > 90 ? 'bg-red' : ($percent > 70 ? 'bg-yellow' : 'bg-green');
+                @endphp
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Subscription</h3>
                         <div class="card-actions">
-                            <a href="{{ route('admin.subscriptions.show', $agent->subscription) }}" class="btn btn-ghost-primary btn-md">
+                            <a href="{{ route('admin.subscriptions.show', $agent->subscription) }}" class="btn btn-ghost-primary btn-sm">
                                 View
                             </a>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <span class="h3">{{ $agent->subscription->plan->name }}</span>
-                            <span class="text-muted">Plan</span>
-                        </div>
-                        @php
-                            $used = $agent->subscription->minutes_used ?? 0;
-                            $included = $agent->subscription->plan->included_minutes ?? 1;
-                            $percent = min(100, ($used / $included) * 100);
-                            $usageClass = $percent > 90 ? 'usage-danger' : ($percent > 70 ? 'usage-warning' : 'usage-normal');
-                        @endphp
-                        <div class="d-flex justify-content-between small mb-1">
-                            <span>Usage</span>
-                            <span class="text-muted">{{ number_format($used, 0) }} / {{ number_format($included) }} min</span>
-                        </div>
-                        <div class="usage-bar mb-3">
-                            <div class="usage-bar-fill {{ $usageClass }}" style="width: {{ $percent }}%"></div>
-                        </div>
-                        <div class="datagrid">
-                            <div class="datagrid-item">
-                                <div class="datagrid-title">Status</div>
-                                <div class="datagrid-content">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h3 class="card-title mb-1">{{ $agent->subscription->plan->name }}</h3>
+                                <div class="text-secondary small">
                                     @switch($agent->subscription->status)
                                         @case('active')
-                                            <span class="badge bg-green-lt">Active</span>
+                                            <span class="badge bg-green-lt me-1">Active</span>
                                             @break
                                         @case('pending')
-                                            <span class="badge bg-yellow-lt">Pending</span>
+                                            <span class="badge bg-yellow-lt me-1">Pending</span>
                                             @break
                                         @default
-                                            <span class="badge bg-secondary-lt">{{ ucfirst($agent->subscription->status) }}</span>
+                                            <span class="badge bg-secondary-lt me-1">{{ ucfirst($agent->subscription->status) }}</span>
                                     @endswitch
+                                    Renews {{ $agent->subscription->current_period_end?->format('M d, Y') ?? '-' }}
                                 </div>
-                            </div>
-                            <div class="datagrid-item">
-                                <div class="datagrid-title">Period End</div>
-                                <div class="datagrid-content">{{ $agent->subscription->current_period_end?->format('M d, Y') ?? '-' }}</div>
+                                <div class="mt-3">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-auto text-secondary small">
+                                            {{ number_format($used, 0) }} / {{ number_format($included) }} min
+                                        </div>
+                                        <div class="col">
+                                            <div class="progress progress-sm">
+                                                <div class="progress-bar {{ $barColor }}" style="width: {{ $percent }}%" role="progressbar" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100">
+                                                    <span class="visually-hidden">{{ round($percent) }}% Used</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-auto text-secondary small">
+                                            {{ round($percent) }}%
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -225,12 +216,20 @@
                     </div>
                 </div>
             @endif
+        </div>
+    </div>
 
+    {{-- Row 2: Recent Calls --}}
+    <div class="row">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Call History</h3>
+                    <h3 class="card-title">Recent Calls</h3>
                     <div class="card-actions">
-                        <span class="text-muted">{{ $callLogs->total() }} calls</span>
+                        <a href="{{ route('admin.agents.calls.index', $agent) }}" class="btn btn-outline-primary btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
+                            All Calls
+                        </a>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -238,7 +237,7 @@
                         <thead>
                             <tr>
                                 <th>Date & Time</th>
-                                <th>Direction</th>
+                                <th class="d-none d-sm-table-cell">Direction</th>
                                 <th>From / To</th>
                                 <th>Duration</th>
                                 <th>Status</th>
@@ -252,7 +251,7 @@
                                         <div>{{ $call->started_at?->format('M d, Y') }}</div>
                                         <div class="text-muted small">{{ $call->started_at?->format('h:i A') }}</div>
                                     </td>
-                                    <td>
+                                    <td class="d-none d-sm-table-cell">
                                         @if($call->direction === 'inbound')
                                             <span class="badge bg-blue-lt">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 6l-11 11" /><path d="M20 17v-11h-11" /></svg>
@@ -307,9 +306,11 @@
                         </tbody>
                     </table>
                 </div>
-                @if($callLogs->hasPages())
-                    <div class="card-footer">
-                        {{ $callLogs->links() }}
+                @if($callLogs->isNotEmpty())
+                    <div class="card-footer text-center">
+                        <a href="{{ route('admin.agents.calls.index', $agent) }}" class="btn btn-link text-muted">
+                            View all calls &rarr;
+                        </a>
                     </div>
                 @endif
             </div>
@@ -317,7 +318,7 @@
     </div>
 
     <!-- Call Details Offcanvas -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="callDetailsOffcanvas" style="width: 500px;">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="callDetailsOffcanvas" style="width: min(500px, 100vw);">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title">Call Details</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>

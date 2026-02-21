@@ -1,9 +1,9 @@
-@extends('layouts.customer')
+@extends('layouts.admin')
 
 @section('title', 'All Calls - ' . $agent->name)
 
 @section('page-pretitle')
-    <a href="{{ route('customer.agents.show', $agent) }}">{{ $agent->name }}</a>
+    <a href="{{ route('admin.agents.show', $agent) }}">{{ $agent->name }}</a>
 @endsection
 
 @section('page-header')
@@ -11,7 +11,7 @@
 @endsection
 
 @section('page-actions')
-    <a href="{{ route('customer.agents.show', $agent) }}" class="btn btn-outline-secondary">
+    <a href="{{ route('admin.agents.show', $agent) }}" class="btn btn-outline-secondary">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>
         Back to Assistant
     </a>
@@ -22,7 +22,7 @@
     {{-- Filters --}}
     <div class="card mb-3">
         <div class="card-body">
-            <form method="GET" action="{{ route('customer.calls.index', $agent) }}">
+            <form method="GET" action="{{ route('admin.agents.calls.index', $agent) }}">
                 <div class="row g-3 align-items-end">
                     <div class="col-sm-3">
                         <label class="form-label">From Date</label>
@@ -43,7 +43,7 @@
                                 Filter
                             </button>
                             @if(request()->hasAny(['from_date', 'to_date', 'phone']))
-                                <a href="{{ route('customer.calls.index', $agent) }}" class="btn btn-outline-secondary">Clear</a>
+                                <a href="{{ route('admin.agents.calls.index', $agent) }}" class="btn btn-outline-secondary">Clear</a>
                             @endif
                         </div>
                     </div>
@@ -61,14 +61,14 @@
             </div>
         </div>
         <div class="table-responsive">
-            <table class="table table-vcenter card-table table-hover">
+            <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
                         <th>Date & Time</th>
                         <th class="d-none d-sm-table-cell">Direction</th>
                         <th>From / To</th>
                         <th>Duration</th>
-                        <th class="d-none d-md-table-cell">Sentiment</th>
+                        <th class="d-none d-md-table-cell">Cost</th>
                         <th>Status</th>
                         <th class="w-1"></th>
                     </tr>
@@ -98,20 +98,12 @@
                                 <div class="text-muted small">{{ $call->to_number ?? '-' }}</div>
                             </td>
                             <td class="text-money">{{ $call->duration_formatted }}</td>
-                            <td class="d-none d-md-table-cell">
-                                @switch($call->sentiment)
-                                    @case('positive')
-                                        <span class="badge bg-green-lt">Positive</span>
-                                        @break
-                                    @case('negative')
-                                        <span class="badge bg-red-lt">Negative</span>
-                                        @break
-                                    @case('neutral')
-                                        <span class="badge bg-secondary-lt">Neutral</span>
-                                        @break
-                                    @default
-                                        <span class="text-muted">-</span>
-                                @endswitch
+                            <td class="text-money d-none d-md-table-cell">
+                                @if($call->retell_cost)
+                                    ${{ number_format($call->retell_cost, 4) }}
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
                             </td>
                             <td>
                                 @switch($call->call_status)
@@ -142,16 +134,8 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7">
-                                <div class="empty-state py-5">
-                                    <div class="empty-state-icon">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
-                                    </div>
-                                    <p class="empty-state-title">No calls found</p>
-                                    <p class="empty-state-description">
-                                        {{ request()->hasAny(['from_date', 'to_date', 'phone']) ? 'No calls match your filters.' : 'This assistant has no calls yet.' }}
-                                    </p>
-                                </div>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                No calls found{{ request()->hasAny(['from_date', 'to_date', 'phone']) ? ' for the selected filters' : '' }}
                             </td>
                         </tr>
                     @endforelse
@@ -231,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
             call.transcript.forEach(item => {
                 const isAgent = item.speaker === 'agent';
                 transcriptHtml += `<div class="transcript-item ${isAgent ? 'transcript-agent' : 'transcript-user'}">
-                    <div class="transcript-role">${isAgent ? 'Assistant' : 'Customer'}</div>
+                    <div class="transcript-role">${isAgent ? 'Agent' : 'Customer'}</div>
                     <div class="transcript-text">${item.message || item.text || ''}</div>
                 </div>`;
             });
@@ -261,6 +245,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="datagrid-content">${call.started_at || '-'}</div></div></div>
                     <div class="col-6"><div class="datagrid-item"><div class="datagrid-title">Duration</div>
                         <div class="datagrid-content text-money">${call.duration_formatted}</div></div></div>
+                    <div class="col-6"><div class="datagrid-item"><div class="datagrid-title">Cost</div>
+                        <div class="datagrid-content text-money">$${parseFloat(call.retell_cost || 0).toFixed(4)}</div></div></div>
                     <div class="col-6"><div class="datagrid-item"><div class="datagrid-title">Sentiment</div>
                         <div class="datagrid-content">${sentimentBadge}</div></div></div>
                 </div>
@@ -268,6 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ${recordingHtml}
             ${call.summary ? `<div class="mb-3"><label class="form-label">Summary</label><div class="bg-light rounded p-3">${call.summary}</div></div>` : ''}
             ${transcriptHtml ? `<div class="mb-3"><label class="form-label">Transcript</label>${transcriptHtml}</div>` : ''}
+            <div class="text-muted small mt-4"><strong>Retell Call ID:</strong> <code>${call.retell_call_id || '-'}</code></div>
         `;
     }
 });

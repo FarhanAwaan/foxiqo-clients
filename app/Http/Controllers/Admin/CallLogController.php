@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Customer;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
-use App\Models\CallLog;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,7 +11,7 @@ class CallLogController extends Controller
 {
     public function index(Agent $agent, Request $request): View
     {
-        $this->authorizeAgent($agent);
+        $agent->load(['company', 'subscription.plan']);
 
         $query = $agent->callLogs()->latest('started_at');
 
@@ -34,29 +33,6 @@ class CallLogController extends Controller
 
         $callLogs = $query->paginate(20)->withQueryString();
 
-        return view('customer.calls.index', compact('agent', 'callLogs'));
-    }
-
-    public function show(CallLog $callLog): View
-    {
-        $callLog->load('agent');
-
-        $this->authorizeCallLog($callLog);
-
-        return view('customer.calls.show', compact('callLog'));
-    }
-
-    protected function authorizeAgent(Agent $agent): void
-    {
-        if ($agent->company_id !== auth()->user()->company_id) {
-            abort(403, 'Unauthorized');
-        }
-    }
-
-    protected function authorizeCallLog(CallLog $callLog): void
-    {
-        if ($callLog->agent->company_id !== auth()->user()->company_id) {
-            abort(403, 'Unauthorized');
-        }
+        return view('admin.agents.calls.index', compact('agent', 'callLogs'));
     }
 }
