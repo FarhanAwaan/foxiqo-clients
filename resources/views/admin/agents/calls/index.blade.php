@@ -22,7 +22,7 @@
     {{-- Filters --}}
     <div class="card mb-3">
         <div class="card-body">
-            <form method="GET" action="{{ route('admin.agents.calls.index', $agent) }}">
+            <form method="GET" action="{{ route('admin.agents.calls.index', $agent) }}" id="filtersForm">
                 <div class="row g-3 align-items-end">
                     <div class="col-sm-3">
                         <label class="form-label">From Date</label>
@@ -53,11 +53,26 @@
     </div>
 
     {{-- Calls Table --}}
-    <div class="card">
+    <div class="card position-relative" id="callsCard">
+
+        {{-- Refresh overlay --}}
+        <div id="callsRefreshOverlay" class="d-none position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.82); z-index: 10; border-radius: var(--tblr-card-border-radius, 4px);">
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-2" style="width: 2.5rem; height: 2.5rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="text-muted small fw-medium">Fetching latest calls...</div>
+            </div>
+        </div>
+
         <div class="card-header">
             <h3 class="card-title">Calls</h3>
-            <div class="card-actions">
-                <span class="text-muted">{{ $callLogs->total() }} total</span>
+            <div class="card-actions d-flex align-items-center gap-3">
+                <span class="text-muted" id="callsTotalCount">{{ $callLogs->total() }} total</span>
+                <button type="button" id="refreshCallsBtn" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" id="refreshBtnIcon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
+                    <span id="refreshBtnText">Fetch Latest</span>
+                </button>
             </div>
         </div>
         <div class="table-responsive">
@@ -73,83 +88,24 @@
                         <th class="w-1"></th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($callLogs as $call)
-                        <tr>
-                            <td>
-                                <div>{{ $call->started_at?->format('M d, Y') }}</div>
-                                <div class="text-muted small">{{ $call->started_at?->format('h:i A') }}</div>
-                            </td>
-                            <td class="d-none d-sm-table-cell">
-                                @if($call->direction === 'inbound')
-                                    <span class="badge bg-blue-lt">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 6l-11 11" /><path d="M20 17v-11h-11" /></svg>
-                                        Inbound
-                                    </span>
-                                @else
-                                    <span class="badge bg-green-lt">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 18l11 -11" /><path d="M4 7v11h11" /></svg>
-                                        Outbound
-                                    </span>
-                                @endif
-                            </td>
-                            <td>
-                                <div>{{ $call->from_number ?? '-' }}</div>
-                                <div class="text-muted small">{{ $call->to_number ?? '-' }}</div>
-                            </td>
-                            <td class="text-money">{{ $call->duration_formatted }}</td>
-                            <td class="text-money d-none d-md-table-cell">
-                                @if($call->retell_cost)
-                                    ${{ number_format($call->retell_cost, 4) }}
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                            <td>
-                                @switch($call->call_status)
-                                    @case('completed')
-                                    @case('analyzed')
-                                        <span class="badge bg-green-lt">Completed</span>
-                                        @break
-                                    @case('in_progress')
-                                        <span class="badge bg-blue-lt">In Progress</span>
-                                        @break
-                                    @case('failed')
-                                        <span class="badge bg-red-lt">Failed</span>
-                                        @break
-                                    @default
-                                        <span class="badge bg-secondary-lt">{{ ucfirst($call->call_status ?? 'Unknown') }}</span>
-                                @endswitch
-                            </td>
-                            <td>
-                                <button type="button"
-                                        class="btn btn-icon btn-ghost-primary btn-sm view-call-btn"
-                                        data-call-uuid="{{ $call->uuid }}"
-                                        data-bs-toggle="offcanvas"
-                                        data-bs-target="#callDetailsOffcanvas"
-                                        title="View Details">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                No calls found{{ request()->hasAny(['from_date', 'to_date', 'phone']) ? ' for the selected filters' : '' }}
-                            </td>
-                        </tr>
-                    @endforelse
+                <tbody id="callsTableBody">
+                    @include('admin.agents.calls._rows')
                 </tbody>
             </table>
         </div>
         @if($callLogs->hasPages())
-            <div class="card-footer d-flex align-items-center">
-                <p class="m-0 text-muted">
+            <div class="card-footer d-flex align-items-center" id="callsPaginationFooter">
+                <p class="m-0 text-muted" id="callsShowingText">
                     Showing {{ $callLogs->firstItem() }} to {{ $callLogs->lastItem() }} of {{ $callLogs->total() }} calls
                 </p>
-                <div class="ms-auto">
+                <div class="ms-auto" id="callsPaginationLinks">
                     {{ $callLogs->links() }}
                 </div>
+            </div>
+        @else
+            <div class="card-footer d-flex align-items-center d-none" id="callsPaginationFooter">
+                <p class="m-0 text-muted" id="callsShowingText"></p>
+                <div class="ms-auto" id="callsPaginationLinks"></div>
             </div>
         @endif
     </div>
@@ -175,15 +131,90 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const viewCallBtns = document.querySelectorAll('.view-call-btn');
-    const loader = document.getElementById('callDetailsLoader');
+    const callsTableBody   = document.getElementById('callsTableBody');
+    const refreshBtn       = document.getElementById('refreshCallsBtn');
+    const refreshBtnText   = document.getElementById('refreshBtnText');
+    const refreshBtnIcon   = document.getElementById('refreshBtnIcon');
+    const overlay          = document.getElementById('callsRefreshOverlay');
+    const totalCount       = document.getElementById('callsTotalCount');
+    const paginationFooter = document.getElementById('callsPaginationFooter');
+    const showingText      = document.getElementById('callsShowingText');
+    const paginationLinks  = document.getElementById('callsPaginationLinks');
+
+    const MIN_SPINNER_MS = 1500;
+
+    // --- Refresh table via AJAX ---
+    refreshBtn.addEventListener('click', async function() {
+        const started = Date.now();
+
+        refreshBtn.disabled = true;
+        refreshBtnText.textContent = 'Fetching...';
+        refreshBtnIcon.innerHTML = '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 6l0 -3" /><path d="M16.25 7.75l2.15 -2.15" /><path d="M18 12l3 0" /><path d="M16.25 16.25l2.15 2.15" /><path d="M12 18l0 3" /><path d="M7.75 16.25l-2.15 2.15" /><path d="M6 12l-3 0" /><path d="M7.75 7.75l-2.15 -2.15" />';
+        overlay.classList.remove('d-none');
+
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('refresh', '1');
+            url.searchParams.delete('page'); // reset to page 1
+
+            const response = await fetch(url.toString(), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) throw new Error('Request failed');
+            const data = await response.json();
+
+            // Enforce minimum spinner duration
+            const elapsed = Date.now() - started;
+            if (elapsed < MIN_SPINNER_MS) {
+                await new Promise(r => setTimeout(r, MIN_SPINNER_MS - elapsed));
+            }
+
+            // Update table body
+            callsTableBody.innerHTML = data.rows_html;
+
+            // Update count
+            totalCount.textContent = data.total + ' total';
+
+            // Update pagination footer
+            if (data.pagination_html && data.showing_text) {
+                showingText.textContent = data.showing_text;
+                paginationLinks.innerHTML = data.pagination_html;
+                paginationFooter.classList.remove('d-none');
+            } else {
+                paginationFooter.classList.add('d-none');
+            }
+
+            // Re-bind view-call buttons in new rows
+            bindViewCallButtons();
+
+        } catch (e) {
+            const elapsed = Date.now() - started;
+            if (elapsed < MIN_SPINNER_MS) {
+                await new Promise(r => setTimeout(r, MIN_SPINNER_MS - elapsed));
+            }
+            callsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to fetch calls. Please try again.</td></tr>';
+        } finally {
+            overlay.classList.add('d-none');
+            refreshBtn.disabled = false;
+            refreshBtnText.textContent = 'Fetch Latest';
+            refreshBtnIcon.innerHTML = '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />';
+        }
+    });
+
+    // --- Call details offcanvas ---
+    const loader        = document.getElementById('callDetailsLoader');
     const dataContainer = document.getElementById('callDetailsData');
 
-    viewCallBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            loadCallDetails(this.dataset.callUuid);
+    function bindViewCallButtons() {
+        document.querySelectorAll('.view-call-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                loadCallDetails(this.dataset.callUuid);
+            });
         });
-    });
+    }
+
+    bindViewCallButtons();
 
     function loadCallDetails(callUuid) {
         loader.classList.remove('d-none');

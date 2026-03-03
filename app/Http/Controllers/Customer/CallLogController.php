@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\CallLog;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CallLogController extends Controller
 {
-    public function index(Agent $agent, Request $request): View
+    public function index(Agent $agent, Request $request): View|JsonResponse
     {
         $this->authorizeAgent($agent);
 
@@ -33,6 +34,17 @@ class CallLogController extends Controller
         }
 
         $callLogs = $query->paginate(20)->withQueryString();
+
+        if ($request->boolean('refresh')) {
+            return response()->json([
+                'rows_html'      => view('customer.calls._rows', compact('callLogs'))->render(),
+                'total'          => $callLogs->total(),
+                'pagination_html'=> $callLogs->hasPages() ? $callLogs->links()->render() : null,
+                'showing_text'   => $callLogs->hasPages()
+                    ? "Showing {$callLogs->firstItem()} to {$callLogs->lastItem()} of {$callLogs->total()} calls"
+                    : null,
+            ]);
+        }
 
         return view('customer.calls.index', compact('agent', 'callLogs'));
     }
