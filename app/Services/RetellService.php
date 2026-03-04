@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\CircuitBreakerTriggered;
+use App\Exceptions\WebhookOutOfOrderException;
 use App\Models\Agent;
 use App\Models\CallLog;
 use App\Models\SystemSetting;
@@ -83,10 +84,16 @@ class RetellService
 
     protected function handleCallEnded(Agent $agent, array $callData): void
     {
-        $callLog = CallLog::where('retell_call_id', $callData['call_id'])->where('call_status', 'started')->first();
+        // Find any existing log regardless of status (don't restrict to 'started')
+        $callLog = CallLog::where('retell_call_id', $callData['call_id'])->first();
 
         if (!$callLog) {
             $callLog = $this->handleCallStarted($agent, $callData);
+        }
+
+        // If call_analyzed already processed first, do not downgrade the status
+        if ($callLog->call_status === 'analyzed') {
+            return;
         }
 
         $durationSeconds = isset($callData['duration_ms'])
@@ -101,7 +108,7 @@ class RetellService
                 ? round($durationSeconds / 60, 2)
                 : null,
             'retell_cost' => $callData['call_cost']['combined_cost'] ?? null,
-            'transcript' => isset($callData['transcript_object']) ? json_encode($callData['transcript_object']) : null,
+            'transcript' => isset($callData['transcript_object']) ? json_encode($this->formatRetellTranscript($callData['transcript_object'])) : $callLog->transcript,
             'metadata' => $callData,
         ]);
     }
@@ -111,7 +118,13 @@ class RetellService
         $callLog = CallLog::where('retell_call_id', $callData['call_id'])->first();
 
         if (!$callLog) {
+            // No call_started or call_ended received yet — create a stub and process
             $callLog = $this->handleCallStarted($agent, $callData);
+        } elseif ($callLog->call_status === 'started') {
+            // call_ended webhook has not been processed yet — re-queue and wait
+            throw new WebhookOutOfOrderException(
+                "call_analyzed arrived before call_ended for call_id={$callData['call_id']}"
+            );
         }
 
         $durationSeconds = isset($callData['duration_ms'])

@@ -23,5 +23,4 @@ Schedule::command(MarkOverdueInvoices::class)->dailyAt('12:00')->timezone('Ameri
 
 Schedule::command('queue:work database --tries=3 --timeout=90 --sleep=3 --stop-when-empty')
     ->everyMinute()
-    ->withoutOverlapping()
-    ->onOneServer();
+    ->withoutOverlapping();
