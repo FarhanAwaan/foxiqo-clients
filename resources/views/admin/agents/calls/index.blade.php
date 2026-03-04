@@ -216,6 +216,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     bindViewCallButtons();
 
+    // --- Stop audio when offcanvas closes ---
+    document.getElementById('callDetailsOffcanvas').addEventListener('hide.bs.offcanvas', function() {
+        const audio = this.querySelector('audio');
+        if (audio) { audio.pause(); audio.currentTime = 0; }
+    });
+
     function loadCallDetails(callUuid) {
         loader.classList.remove('d-none');
         dataContainer.classList.add('d-none');
