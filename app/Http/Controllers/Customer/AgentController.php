@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -20,7 +21,7 @@ class AgentController extends Controller
         return view('customer.agents.index', compact('agents'));
     }
 
-    public function show(Agent $agent, Request $request): View
+    public function show(Agent $agent, Request $request): View|JsonResponse
     {
         $this->authorizeAgent($agent);
 
@@ -31,6 +32,12 @@ class AgentController extends Controller
             ->latest('started_at')
             ->limit(10)
             ->get();
+
+        if ($request->boolean('refresh')) {
+            return response()->json([
+                'rows_html' => view('customer.agents._recent_call_rows', compact('callLogs'))->render(),
+            ]);
+        }
 
         // Calculate stats
         $totalCalls = $agent->callLogs()->count();
