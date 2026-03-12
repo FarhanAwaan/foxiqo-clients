@@ -174,7 +174,84 @@
         </div>
     </div>
 
-    {{-- Row 2: Recent Calls --}}
+    {{-- Row 2: Charts ──────────────────────────────────────────────── --}}
+    <div class="row g-3 mb-3">
+
+        {{-- Date Range Picker --}}
+        <div class="col-12" id="chartRangeContainer">
+            <div class="card">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <span class="text-muted medium fw-medium me-1">Performance Range:</span>
+                        <div class="btn-group btn-group-md" role="group">
+                            <button type="button" class="btn btn-outline-secondary chart-range-btn" data-range="today">Today</button>
+                            <button type="button" class="btn btn-outline-secondary chart-range-btn" data-range="yesterday">Yesterday</button>
+                            <button type="button" class="btn btn-primary chart-range-btn" data-range="last7">Last 7 Days</button>
+                            <button type="button" class="btn btn-outline-secondary chart-range-btn" data-range="last30">Last 30 Days</button>
+                            <button type="button" class="btn btn-outline-secondary chart-range-btn" data-range="custom">Custom</button>
+                        </div>
+                        <div class="chart-custom-range d-none d-flex align-items-center gap-2">
+                            <input type="date" class="form-control form-control-sm chart-from-date" style="width:145px;">
+                            <span class="text-muted small">to</span>
+                            <input type="date" class="form-control form-control-sm chart-to-date" style="width:145px;">
+                            <button class="btn btn-sm btn-success chart-apply-range">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Chart cards with loading overlay --}}
+        <div class="col-12">
+            <div id="agentChartsContainer" style="position:relative;min-height:240px;">
+
+                {{-- Loading overlay (covers only the chart cards) --}}
+                <div id="agentChartsOverlay"
+                     style="position:absolute;inset:0;z-index:20;background:rgba(248,250,252,0.93);
+                            display:flex;flex-direction:column;align-items:center;justify-content:center;
+                            gap:8px;border-radius:6px;">
+                    <div class="spinner-border text-primary" style="width:2rem;height:2rem;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="text-muted small">Loading performance data&hellip;</span>
+                </div>
+
+                <div class="row g-3">
+                    {{-- Call Volume --}}
+                    <div class="col-lg-8">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h3 class="card-title">Call Volume</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="height:200px;position:relative;">
+                                    <canvas id="callVolumeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Sentiment --}}
+                    <div class="col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h3 class="card-title">Sentiment Breakdown</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="height:200px;position:relative;">
+                                    <canvas id="sentimentChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    {{-- Row 3: Recent Calls --}}
     <div class="row">
         <div class="col-12">
             <div class="card position-relative" id="recentCallsCard">
@@ -445,6 +522,36 @@ document.addEventListener('DOMContentLoaded', function() {
             ` : ''}
         `;
     }
+});
+</script>
+
+<script>
+$(function () {
+    var MIN_MS       = 1500;
+    var $overlay     = $('#agentChartsOverlay');
+    var urlVolume    = '{{ route("customer.agents.charts.call-volume", $agent) }}';
+    var urlSentiment = '{{ route("customer.agents.charts.sentiment", $agent) }}';
+
+    function loadCharts(params) {
+        var loadStarted = Date.now();
+        $overlay.stop(true, true).show();
+
+        var p1 = DashboardCharts.loadCallVolumeChart(urlVolume,    'callVolumeChart', params);
+        var p2 = DashboardCharts.loadSentimentChart(urlSentiment,  'sentimentChart',  params);
+
+        $.when(p1, p2).always(function () {
+            var elapsed = Date.now() - loadStarted;
+            var delay   = Math.max(0, MIN_MS - elapsed);
+            setTimeout(function () { $overlay.fadeOut(400); }, delay);
+        });
+    }
+
+    DashboardCharts.initDateRangePicker({
+        containerSelector: '#chartRangeContainer',
+        onRefresh: function (params) { loadCharts(params); },
+    });
+
+    loadCharts({ range: 'last7' });
 });
 </script>
 @endpush

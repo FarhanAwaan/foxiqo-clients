@@ -21,18 +21,14 @@ class DashboardController extends Controller
 
         $data = [
             'activeSubscriptions' => Subscription::active()->count(),
-            'activeCompanies' => Company::where('status', 'active')->count(),
-            'pendingPayments' => Invoice::unpaid()->sum('amount'),
-            'thisMonth' => $stats['this_month'],
-            'lastMonth' => $stats['last_month'],
-            'recentInvoices' => Invoice::with(['company', 'subscription.agent'])
-                ->latest()
-                ->take(5)
-                ->get(),
+            'activeCompanies'     => Company::where('status', 'active')->count(),
+            'pendingPayments'     => Invoice::unpaid()->sum('amount'),
+            'thisMonth'           => $stats['this_month'],
+            'lastMonth'           => $stats['last_month'],
+            'recentInvoices'      => Invoice::with(['company', 'subscription.agent'])
+                ->latest()->take(5)->get(),
             'recentSubscriptions' => Subscription::with(['company', 'agent', 'plan'])
-                ->latest()
-                ->take(5)
-                ->get(),
+                ->latest()->take(5)->get(),
         ];
 
         return view('admin.dashboard.index', $data);

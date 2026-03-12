@@ -10,12 +10,12 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $company = auth()->user()->company;
+        $company  = auth()->user()->company;
+        $agents   = $company->agents()->with(['subscription.plan'])->get();
 
-        $agents = $company->agents()->with(['subscription.plan'])->get();
-
-        $totalMinutesUsed = $agents->sum(fn ($agent) => $agent->subscription?->minutes_used ?? 0);
-        $totalMinutesIncluded = $agents->sum(fn ($agent) => $agent->subscription?->plan?->included_minutes ?? 0);
+        $totalMinutesUsed     = $agents->sum(fn ($a) => $a->subscription?->minutes_used ?? 0);
+        $totalMinutesIncluded = $agents->sum(fn ($a) => $a->subscription?->plan?->included_minutes ?? 0);
+        $activeSubscriptions  = $agents->filter(fn ($a) => $a->subscription?->status === 'active')->count();
 
         $recentCalls = CallLog::whereIn('agent_id', $agents->pluck('id'))
             ->with('agent')
@@ -23,15 +23,13 @@ class DashboardController extends Controller
             ->take(10)
             ->get();
 
-        $activeSubscriptions = $agents->filter(fn ($agent) => $agent->subscription?->status === 'active')->count();
-
         return view('customer.dashboard.index', [
-            'company' => $company,
-            'agents' => $agents,
-            'totalMinutesUsed' => $totalMinutesUsed,
+            'company'              => $company,
+            'agents'               => $agents,
+            'totalMinutesUsed'     => $totalMinutesUsed,
             'totalMinutesIncluded' => $totalMinutesIncluded,
-            'recentCalls' => $recentCalls,
-            'activeSubscriptions' => $activeSubscriptions,
+            'activeSubscriptions'  => $activeSubscriptions,
+            'recentCalls'          => $recentCalls,
         ]);
     }
 }

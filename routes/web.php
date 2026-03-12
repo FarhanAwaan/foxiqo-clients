@@ -101,6 +101,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     // Agent Management
     Route::resource('agents', AdminAgentController::class);
     Route::get('agents/{agent}/calls', [AdminCallLogController::class, 'index'])->name('agents.calls.index');
+    Route::get('agents/{agent}/charts/call-volume', [AdminAgentController::class, 'chartCallVolume'])->name('agents.charts.call-volume');
+    Route::get('agents/{agent}/charts/sentiment', [AdminAgentController::class, 'chartSentiment'])->name('agents.charts.sentiment');
 
     // Plan Management
     Route::resource('plans', PlanController::class);
@@ -145,6 +147,8 @@ Route::prefix('customer')->middleware(['auth', 'customer'])->name('customer.')->
     // Agents
     Route::get('agents', [CustomerAgentController::class, 'index'])->name('agents.index');
     Route::get('agents/{agent}', [CustomerAgentController::class, 'show'])->name('agents.show');
+    Route::get('agents/{agent}/charts/call-volume', [CustomerAgentController::class, 'chartCallVolume'])->name('agents.charts.call-volume');
+    Route::get('agents/{agent}/charts/sentiment', [CustomerAgentController::class, 'chartSentiment'])->name('agents.charts.sentiment');
 
     // Call Logs
     Route::get('agents/{agent}/calls', [CustomerCallLogController::class, 'index'])->name('calls.index');

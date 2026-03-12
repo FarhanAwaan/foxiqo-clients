@@ -190,7 +190,7 @@
                             @forelse($recentCalls as $call)
                                 <tr>
                                     <td>
-                                        <a href="{{ route('customer.calls.show', $call) }}" class="text-reset">
+                                        <a href="{{ route('customer.agents.show', $call->agent) }}" class="text-reset">
                                             {{ $call->agent->name ?? 'Unknown' }}
                                         </a>
                                     </td>

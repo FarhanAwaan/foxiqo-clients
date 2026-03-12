@@ -90,6 +90,12 @@
     <!-- Tabler JS -->
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Dashboard Charts -->
+    <script src="{{ asset('js/charts/dashboard-charts.js') }}"></script>
+
     <!-- Custom JS -->
     <script src="{{ asset('js/custom.js') }}"></script>
 
