@@ -33,7 +33,7 @@ class SubscriptionExpiryWarningMail extends Mailable
                 'company' => $this->subscription->company,
                 'agent' => $this->subscription->agent,
                 'plan' => $this->subscription->plan,
-                'daysRemaining' => now()->diffInDays($this->subscription->current_period_end, false),
+                'daysRemaining' => (int) now()->diffInDays($this->subscription->current_period_end, false),
             ],
         );
     }
