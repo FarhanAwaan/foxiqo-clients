@@ -24,6 +24,7 @@ class User extends Authenticatable
         'uuid', 'company_id', 'first_name', 'last_name', 'email', 'phone',
         'password', 'role', 'status', 'email_verified_at', 'two_factor_enabled',
         'two_factor_secret', 'signup_token', 'signup_token_expires_at', 'last_login_at',
+        'password_reset_token', 'password_reset_token_expires_at',
     ];
 
     /**
@@ -32,7 +33,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        'password', 'remember_token', 'two_factor_secret', 'signup_token',
+        'password', 'remember_token', 'two_factor_secret', 'signup_token', 'password_reset_token',
     ];
 
     /**
@@ -45,6 +46,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'signup_token_expires_at' => 'datetime',
+            'password_reset_token_expires_at' => 'datetime',
             'last_login_at' => 'datetime',
             'two_factor_enabled' => 'boolean',
             'password' => 'hashed',
@@ -77,6 +79,16 @@ class User extends Authenticatable
         $this->update([
             'signup_token' => $token,
             'signup_token_expires_at' => now()->addDays(7),
+        ]);
+        return $token;
+    }
+
+    public function generatePasswordResetToken(): string
+    {
+        $token = \Illuminate\Support\Str::random(64);
+        $this->update([
+            'password_reset_token' => $token,
+            'password_reset_token_expires_at' => now()->addHours(24),
         ]);
         return $token;
     }

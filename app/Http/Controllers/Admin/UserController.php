@@ -162,4 +162,15 @@ class UserController extends Controller
 
         return back()->with('success', 'Invitation resent successfully.');
     }
+
+    public function resetPassword(User $user): RedirectResponse
+    {
+        $token = $user->generatePasswordResetToken();
+
+        $this->auditService->log('password_reset_initiated', $user);
+
+        $this->emailService->sendPasswordReset($user, $token);
+
+        return back()->with('success', "Password reset email sent to {$user->email}.");
+    }
 }

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Agent;
-use App\Models\BillingCycle;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Subscription;
@@ -27,7 +26,16 @@ class RevenueService
             ->forPeriod($start, $end)
             ->sum('duration_minutes');
 
-        $revenue = $subscription ? $subscription->getEffectivePrice() : 0;
+        // Sums actual invoiced amounts for periods starting in this window, rather
+        // than reading the subscription's current price — getEffectivePrice()
+        // reflects today's plan/custom_price, so using it for a past period would
+        // misreport revenue whenever the price changed since then. Invoices already
+        // snapshot the price that was actually in effect at billing time.
+        $revenue = $subscription
+            ? $subscription->invoices()
+                ->whereBetween('billing_period_start', [$start, $end])
+                ->sum('amount')
+            : 0;
         $profit = $revenue - $retellCost;
         $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0;
 
@@ -73,19 +81,43 @@ class RevenueService
 
     public function getSystemStats(Carbon $start, Carbon $end): array
     {
-        $billingCycles = BillingCycle::whereBetween('period_start', [$start, $end])->get();
+        // Aggregates the same live call/subscription data getCompanyStats() uses per
+        // company, rather than BillingCycle snapshots — those are only written at
+        // subscription lifecycle events (create/renew/cancel), so a company sitting
+        // mid-cycle (the normal state most of the time) would contribute nothing to
+        // a snapshot-based total for the period, even though it has real activity.
+        // This also keeps these totals reconcilable with the per-company breakdown
+        // table shown alongside them on the revenue page.
+        $companies = Company::where('status', 'active')->get();
+
+        $totals = [
+            'revenue' => 0,
+            'cost' => 0,
+            'profit' => 0,
+            'total_minutes' => 0,
+            'total_calls' => 0,
+        ];
+
+        foreach ($companies as $company) {
+            $stats = $this->getCompanyStats($company, $start, $end);
+            $totals['revenue'] += $stats['revenue'];
+            $totals['cost'] += $stats['retell_cost'];
+            $totals['profit'] += $stats['profit'];
+            $totals['total_minutes'] += $stats['total_minutes'];
+            $totals['total_calls'] += $stats['total_calls'];
+        }
 
         $currentRevenue = Subscription::active()->get()->sum(fn($s) => $s->getEffectivePrice());
 
         return [
-            'total_revenue' => $billingCycles->sum('subscription_amount'),
-            'total_cost' => $billingCycles->sum('retell_cost'),
-            'total_profit' => $billingCycles->sum('profit'),
-            'average_margin' => round($billingCycles->avg('profit_margin') ?? 0, 2),
-            'total_minutes' => $billingCycles->sum('minutes_used'),
-            'total_calls' => $billingCycles->sum('total_calls'),
+            'revenue' => $totals['revenue'],
+            'cost' => $totals['cost'],
+            'profit' => $totals['profit'],
+            'margin' => $totals['revenue'] > 0 ? round(($totals['profit'] / $totals['revenue']) * 100, 2) : 0,
+            'total_minutes' => round($totals['total_minutes'], 2),
+            'total_calls' => $totals['total_calls'],
             'active_subscriptions' => Subscription::active()->count(),
-            'active_companies' => Company::where('status', 'active')->count(),
+            'active_companies' => $companies->count(),
             'current_mrr' => $currentRevenue,
             'pending_payments' => Invoice::unpaid()->sum('amount'),
         ];

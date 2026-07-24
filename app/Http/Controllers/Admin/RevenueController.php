@@ -25,19 +25,44 @@ class RevenueController extends Controller
             ? Carbon::parse($request->end_date)
             : Carbon::now();
 
-        $systemStats = $this->revenueService->getSystemStats($startDate, $endDate);
-
-        $companyStats = [];
-        if ($request->filled('company_id')) {
-            $company = Company::findOrFail($request->company_id);
-            $companyStats = $this->revenueService->getCompanyStats($company, $startDate, $endDate);
-        }
-
         $companies = Company::where('status', 'active')->orderBy('name')->get();
 
+        $selectedCompany = null;
+        $companyStats = [];
+        if ($request->filled('company_id')) {
+            $selectedCompany = Company::findOrFail($request->company_id);
+            $companyStats = $this->revenueService->getCompanyStats($selectedCompany, $startDate, $endDate);
+        }
+
+        // The four summary cards scope to the selected company when one is chosen,
+        // rather than always showing the portfolio-wide total regardless of the filter.
+        $summaryStats = $selectedCompany
+            ? [
+                'revenue' => $companyStats['revenue'],
+                'cost' => $companyStats['retell_cost'],
+                'profit' => $companyStats['profit'],
+                'margin' => $companyStats['margin'],
+            ]
+            : $this->revenueService->getSystemStats($startDate, $endDate);
+
+        // Per-company margin breakdown for the whole portfolio, sorted worst-margin-first
+        // so underperforming accounts surface immediately. Skipped when a single company
+        // is selected — the per-agent breakdown below covers that view instead.
+        $companyBreakdown = $selectedCompany
+            ? collect()
+            : $companies
+                ->map(fn (Company $company) => array_merge(
+                    ['company' => $company],
+                    $this->revenueService->getCompanyStats($company, $startDate, $endDate)
+                ))
+                ->sortBy('margin')
+                ->values();
+
         return view('admin.revenue.index', compact(
-            'systemStats',
+            'summaryStats',
+            'selectedCompany',
             'companyStats',
+            'companyBreakdown',
             'companies',
             'startDate',
             'endDate'

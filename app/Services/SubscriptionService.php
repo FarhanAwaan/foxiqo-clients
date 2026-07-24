@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\SubscriptionActivated;
 use App\Exceptions\SubscriptionHasPaidInvoiceException;
+use App\Exceptions\SubscriptionRenewalBlockedException;
 use App\Models\Agent;
 use App\Models\BillingCycle;
 use App\Models\Plan;
@@ -124,8 +125,17 @@ class SubscriptionService
         $this->auditService->log('subscription_activated', $subscription);
     }
 
+    /**
+     * @throws SubscriptionRenewalBlockedException if the current period's invoice hasn't been paid
+     */
     public function renew(Subscription $subscription): void
     {
+        if (!$this->currentPeriodIsPaid($subscription)) {
+            throw new SubscriptionRenewalBlockedException(
+                "Subscription {$subscription->uuid} cannot be renewed — the invoice for the current billing period has not been paid."
+            );
+        }
+
         $this->createBillingCycleSnapshot($subscription);
 
         $startDate = Carbon::today();
@@ -145,6 +155,18 @@ class SubscriptionService
         $this->auditService->log('subscription_renewed', $subscription);
 
         $this->emailService->sendSubscriptionRenewal($subscription, $invoice);
+    }
+
+    /**
+     * Whether the invoice for the subscription's current billing period has been paid.
+     * Renewal must never proceed while this is false.
+     */
+    public function currentPeriodIsPaid(Subscription $subscription): bool
+    {
+        return $subscription->invoices()
+            ->where('status', 'paid')
+            ->where('billing_period_start', $subscription->current_period_start)
+            ->exists();
     }
 
     /**
