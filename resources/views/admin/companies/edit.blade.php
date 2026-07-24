@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-    <form action="{{ route('admin.companies.update', $company) }}" method="POST">
+    <form action="{{ route('admin.companies.update', $company) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         @include('admin.companies._form')

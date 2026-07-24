@@ -68,8 +68,20 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Bank Address</label>
+                                <div class="mb-0" id="bankAddress">{{ config('billing.payoneer.bank_address', 'Your Bank Address') }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label class="form-label text-muted small mb-1">Account Holder</label>
                                 <div class="h4 mb-0" id="accountHolder">{{ config('billing.payoneer.account_holder', 'Your Company Name') }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Account Type</label>
+                                <div class="h4 mb-0" id="accountType">{{ config('billing.payoneer.account_type', 'Checking') }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -86,7 +98,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label text-muted small mb-1">Routing Number / SWIFT</label>
+                                <label class="form-label text-muted small mb-1">Routing Number</label>
                                 <div class="d-flex align-items-center">
                                     <div class="h4 mb-0 me-2 font-monospace" id="routingNumber">{{ config('billing.payoneer.routing_number', 'ABCD1234') }}</div>
                                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('routingNumber', event)">

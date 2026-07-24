@@ -65,6 +65,8 @@ class AgentController extends Controller
             'phone_number' => ['nullable', 'string', 'max:20'],
             'agent_type' => ['required', 'string', 'in:inbound,outbound,both'],
             'cost_per_minute' => ['required', 'numeric', 'min:0'],
+            'missed_call_email_alerts_enabled' => ['sometimes', 'boolean'],
+            'missed_call_notification_email' => ['nullable', 'email', 'max:255'],
         ]);
 
         $agent = Agent::create($validated);
@@ -77,7 +79,7 @@ class AgentController extends Controller
 
     public function show(Agent $agent, Request $request): View|JsonResponse
     {
-        $agent->load(['company', 'subscription.plan']);
+        $agent->load(['company', 'subscription.plan', 'calendarConnection']);
 
         // Get latest 10 calls for the overview (full list available via agents.calls.index)
         $callLogs = $agent->callLogs()
@@ -91,6 +93,8 @@ class AgentController extends Controller
             ]);
         }
 
+        $upcomingAppointments = $agent->appointments()->upcoming()->orderBy('starts_at')->limit(10)->get();
+
         // Calculate stats
         $totalCalls = $agent->callLogs()->count();
         $totalMinutes = $agent->callLogs()->sum('duration_minutes');
@@ -98,7 +102,18 @@ class AgentController extends Controller
         $inboundCalls = $agent->callLogs()->where('direction', 'inbound')->count();
         $outboundCalls = $agent->callLogs()->where('direction', 'outbound')->count();
 
-        return view('admin.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls'));
+        $viewData = [
+            'isAdmin' => true,
+            'recentCallRowsPartial' => 'admin.agents._recent_call_rows',
+            'callsIndexUrl' => route('admin.agents.calls.index', $agent),
+            'callVolumeUrl' => route('admin.agents.charts.call-volume', $agent),
+            'sentimentUrl' => route('admin.agents.charts.sentiment', $agent),
+            'companyUrl' => route('admin.companies.show', $agent->company),
+            'subscriptionUrl' => $agent->subscription ? route('admin.subscriptions.show', $agent->subscription) : null,
+            'createSubscriptionUrl' => route('admin.subscriptions.create') . '?agent_id=' . $agent->uuid,
+        ];
+
+        return view('admin.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls', 'upcomingAppointments') + $viewData);
     }
 
     public function edit(Agent $agent): View
@@ -119,6 +134,8 @@ class AgentController extends Controller
             'agent_type' => ['required', 'string', 'in:inbound,outbound,both'],
             'cost_per_minute' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:active,paused,archived'],
+            'missed_call_email_alerts_enabled' => ['sometimes', 'boolean'],
+            'missed_call_notification_email' => ['nullable', 'email', 'max:255'],
         ]);
 
         $oldValues = $agent->toArray();

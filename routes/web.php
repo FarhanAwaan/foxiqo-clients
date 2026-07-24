@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SignupController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\UserController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\PaymentReceiptController;
+use App\Http\Controllers\Admin\CalendarConnectionController;
 use App\Http\Controllers\Billing\PaymentController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\Customer\AgentController as CustomerAgentController;
@@ -48,6 +50,8 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [LoginController::class, 'login']);
     Route::get('signup/{token}', [SignupController::class, 'showForm'])->name('signup.form');
     Route::post('signup/{token}', [SignupController::class, 'complete'])->name('signup.complete');
+    Route::get('reset-password/{token}', [PasswordResetController::class, 'showForm'])->name('password.reset.show');
+    Route::post('reset-password/{token}', [PasswordResetController::class, 'complete'])->name('password.reset.complete');
 });
 
 Route::post('logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
@@ -97,12 +101,19 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     // User Management
     Route::resource('users', UserController::class);
     Route::post('users/{user}/resend-invitation', [UserController::class, 'resendInvitation'])->name('users.resend-invitation');
+    Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
     // Agent Management
     Route::resource('agents', AdminAgentController::class);
     Route::get('agents/{agent}/calls', [AdminCallLogController::class, 'index'])->name('agents.calls.index');
     Route::get('agents/{agent}/charts/call-volume', [AdminAgentController::class, 'chartCallVolume'])->name('agents.charts.call-volume');
     Route::get('agents/{agent}/charts/sentiment', [AdminAgentController::class, 'chartSentiment'])->name('agents.charts.sentiment');
+
+    // Calendar Connections (per-agent)
+    Route::get('calendar/google/callback', [CalendarConnectionController::class, 'googleCallback'])->name('calendar.google.callback');
+    Route::get('agents/{agent}/calendar/connect-google', [CalendarConnectionController::class, 'connectGoogle'])->name('agents.calendar.connect-google');
+    Route::post('agents/{agent}/calendar/connect-cal-com', [CalendarConnectionController::class, 'connectCalCom'])->name('agents.calendar.connect-cal-com');
+    Route::delete('agents/{agent}/calendar', [CalendarConnectionController::class, 'disconnect'])->name('agents.calendar.disconnect');
 
     // Plan Management
     Route::resource('plans', PlanController::class);

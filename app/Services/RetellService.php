@@ -8,15 +8,30 @@ use App\Models\Agent;
 use App\Models\CallLog;
 use App\Models\SystemSetting;
 use App\Models\WebhookLog;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class RetellService
 {
     protected string $apiKey;
     protected string $baseUrl = 'https://api.retellai.com';
 
-    public function __construct()
-    {
+    // Retell disconnection_reason values that indicate the caller was never
+    // actually connected to a human/agent conversation.
+    protected const MISSED_CALL_DISCONNECTION_REASONS = [
+        'dial_no_answer',
+        'dial_busy',
+        'dial_failed',
+        'voicemail_reached',
+        'user_declined',
+        'error_user_not_joined',
+    ];
+
+    public function __construct(
+        protected EmailService $emailService,
+        protected AppointmentService $appointmentService
+    ) {
         $this->apiKey = SystemSetting::getValue('retell_api_key', '');
     }
 
@@ -107,10 +122,23 @@ class RetellService
             'duration_minutes' => $durationSeconds !== null
                 ? round($durationSeconds / 60, 2)
                 : null,
-            'retell_cost' => $callData['call_cost']['combined_cost'] ?? null,
+            'retell_cost' => isset($callData['call_cost']['combined_cost']) ? round($callData['call_cost']['combined_cost'] / 100, 4) : null,
             'transcript' => isset($callData['transcript_object']) ? json_encode($this->formatRetellTranscript($callData['transcript_object'])) : $callLog->transcript,
             'metadata' => $callData,
         ]);
+
+        if (in_array($callData['disconnection_reason'] ?? null, self::MISSED_CALL_DISCONNECTION_REASONS, true)) {
+            $this->handleMissedCall($agent, $callLog->fresh());
+        }
+    }
+
+    protected function handleMissedCall(Agent $agent, CallLog $callLog): void
+    {
+        if (!$agent->missed_call_email_alerts_enabled) {
+            return;
+        }
+
+        $this->emailService->sendMissedCallAlert($callLog);
     }
 
     protected function handleCallAnalyzed(Agent $agent, array $callData): void
@@ -136,7 +164,7 @@ class RetellService
             'ended_at'          => $callLog->ended_at ?? now(),
             'duration_seconds'  => $durationSeconds,
             'duration_minutes'  => $durationSeconds !== null ? round($durationSeconds / 60, 2) : $callLog->duration_minutes,
-            'retell_cost'       => isset($callData['call_cost']['combined_cost']) ? round($callData['call_cost']['combined_cost'] / 100) : $callLog->retell_cost,
+            'retell_cost'       => isset($callData['call_cost']['combined_cost']) ? round($callData['call_cost']['combined_cost'] / 100, 4) : $callLog->retell_cost,
             'transcript'        => isset($callData['transcript_object']) ? json_encode($this->formatRetellTranscript($callData['transcript_object'])) : $callLog->transcript,
             'summary'           => $callData['call_analysis']['call_summary'] ?? $callLog->summary,
             'sentiment'         => $callData['call_analysis']['user_sentiment'] ?? $callLog->sentiment,
@@ -146,6 +174,45 @@ class RetellService
         ]);
 
         $this->updateSubscriptionMinutes($agent, $callLog);
+        $this->maybeCreateAppointment($agent, $callLog->fresh(), $callData);
+    }
+
+    /**
+     * Looks for booking details in Retell's post-call custom analysis data.
+     * Agencies configure these field names in the Retell dashboard's
+     * "Post-Call Analysis" tab for each agent: appointment_requested (boolean),
+     * appointment_date ("YYYY-MM-DD"), appointment_time ("HH:MM", 24h),
+     * customer_name, customer_email (optional).
+     */
+    protected function maybeCreateAppointment(Agent $agent, CallLog $callLog, array $callData): void
+    {
+        $customData = $callData['call_analysis']['custom_analysis_data'] ?? [];
+
+        $requested = $customData['appointment_requested'] ?? false;
+        if (!filter_var($requested, FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
+        $date = $customData['appointment_date'] ?? null;
+        $time = $customData['appointment_time'] ?? null;
+
+        if (!$date || !$time) {
+            return;
+        }
+
+        try {
+            $startsAt = Carbon::parse("{$date} {$time}");
+        } catch (\Throwable $e) {
+            Log::warning("Could not parse appointment date/time for call {$callLog->id}: {$date} {$time}");
+            return;
+        }
+
+        $this->appointmentService->createFromCall($agent, $callLog, [
+            'customer_name' => $customData['customer_name'] ?? null,
+            'customer_email' => $customData['customer_email'] ?? null,
+            'starts_at' => $startsAt,
+            'ends_at' => $startsAt->copy()->addMinutes(30),
+        ]);
     }
 
     protected function updateSubscriptionMinutes(Agent $agent, CallLog $callLog): void

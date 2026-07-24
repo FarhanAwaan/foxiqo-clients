@@ -146,6 +146,37 @@
                 </div>
             </div>
         </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title">Missed-Call Alerts</h3>
+            </div>
+            <div class="card-body">
+                <label class="form-check form-switch">
+                    <input type="hidden" name="missed_call_email_alerts_enabled" value="0">
+                    <input type="checkbox"
+                           name="missed_call_email_alerts_enabled"
+                           id="missed_call_email_alerts_enabled"
+                           class="form-check-input"
+                           value="1"
+                           {{ old('missed_call_email_alerts_enabled', $agent->missed_call_email_alerts_enabled ?? false) ? 'checked' : '' }}>
+                    <span class="form-check-label">Email me when this assistant misses a call</span>
+                </label>
+                <div class="form-hint mb-3">Triggers on no-answer, busy, voicemail, or a caller who never connects.</div>
+
+                <label class="form-label" for="missed_call_notification_email">Notification Email</label>
+                <input type="email"
+                       name="missed_call_notification_email"
+                       id="missed_call_notification_email"
+                       class="form-control @error('missed_call_notification_email') is-invalid @enderror"
+                       placeholder="Leave blank to use the company's billing email"
+                       value="{{ old('missed_call_notification_email', $agent->missed_call_notification_email ?? '') }}">
+                @error('missed_call_notification_email')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <div class="form-hint">Optional &mdash; falls back to the company's billing email if left blank.</div>
+            </div>
+        </div>
     </div>
 
     <div class="col-lg-4">

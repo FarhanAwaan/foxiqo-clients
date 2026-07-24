@@ -236,6 +236,61 @@
                     </div>
                 </div>
 
+                <!-- Google Calendar Integration -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" /></svg>
+                            Google Calendar Integration
+                        </h3>
+                        <div class="card-actions">
+                            @if($hasValues['google_calendar_client_secret'])
+                                <span class="badge bg-green-lt">Configured</span>
+                            @else
+                                <span class="badge bg-yellow-lt">Not Configured</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="google_calendar_client_id">OAuth Client ID</label>
+                                <input type="text"
+                                       name="google_calendar_client_id"
+                                       id="google_calendar_client_id"
+                                       class="form-control @error('google_calendar_client_id') is-invalid @enderror"
+                                       value="{{ old('google_calendar_client_id', $settings['google_calendar_client_id']) }}"
+                                       placeholder="xxxxxxxxxx.apps.googleusercontent.com">
+                                @error('google_calendar_client_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="google_calendar_client_secret">OAuth Client Secret</label>
+                                <div class="input-group">
+                                    <input type="password"
+                                           name="google_calendar_client_secret"
+                                           id="google_calendar_client_secret"
+                                           class="form-control @error('google_calendar_client_secret') is-invalid @enderror"
+                                           placeholder="{{ $hasValues['google_calendar_client_secret'] ? '••••••••••••••••' : 'Enter OAuth Client Secret' }}"
+                                           autocomplete="off">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="google_calendar_client_secret">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
+                                    </button>
+                                </div>
+                                @error('google_calendar_client_secret')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                <div class="form-hint">Leave blank to keep existing secret</div>
+                            </div>
+                        </div>
+                        <div class="form-hint mb-0">
+                            One OAuth app for the whole agency. Create it in the Google Cloud Console with an authorized redirect URI of
+                            <code>{{ url('/admin/calendar/google/callback') }}</code>, then agents connect their own calendar individually from their assistant page.
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Billing Settings -->
                 <div class="card mb-4">
                     <div class="card-header">

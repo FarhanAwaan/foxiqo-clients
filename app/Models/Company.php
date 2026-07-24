@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Company extends Model
@@ -15,6 +16,7 @@ class Company extends Model
         'uuid', 'name', 'email', 'billing_email', 'phone',
         'address', 'city', 'state', 'postal_code', 'country',
         'status', 'webhook_signature', 'notes',
+        'logo_path', 'brand_color',
     ];
 
     protected static function booted(): void
@@ -76,12 +78,22 @@ class Company extends Model
         return $this->hasMany(Notification::class);
     }
 
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
     /**
      * Get the effective billing email (falls back to company email if billing_email not set)
      */
     public function getEffectiveBillingEmailAttribute(): string
     {
         return $this->billing_email ?? $this->email;
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null;
     }
 
     public function getFullAddressAttribute(): string

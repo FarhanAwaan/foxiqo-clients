@@ -154,6 +154,47 @@
     </div>
 
     <div class="col-lg-4">
+        @isset($company)
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Branding</h3>
+                    <div class="card-subtitle">Shown to this company's users in their customer portal</div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="logo">Logo</label>
+                        @if($company->logo_url)
+                            <div class="mb-2">
+                                <img src="{{ $company->logo_url }}" alt="{{ $company->name }}" style="max-height: 48px;" class="rounded-2">
+                            </div>
+                        @endif
+                        <input type="file"
+                               name="logo"
+                               id="logo"
+                               accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                               class="form-control @error('logo') is-invalid @enderror">
+                        @error('logo')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-hint">PNG, JPG, WEBP, or SVG. Max 2MB.</div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label" for="brand_color">Brand Color</label>
+                        <input type="color"
+                               name="brand_color"
+                               id="brand_color"
+                               class="form-control form-control-color @error('brand_color') is-invalid @enderror"
+                               value="{{ old('brand_color', $company->brand_color ?? '#F96900') }}">
+                        @error('brand_color')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-hint">Replaces the accent color throughout their customer portal.</div>
+                    </div>
+                </div>
+            </div>
+        @endisset
+
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">Notes</h3>

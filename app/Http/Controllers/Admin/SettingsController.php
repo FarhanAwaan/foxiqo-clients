@@ -34,6 +34,10 @@ class SettingsController extends Controller
             'payoneer_api_key' => SystemSetting::getValue('payoneer_api_key', ''),
             'payoneer_partner_id' => SystemSetting::getValue('payoneer_partner_id', ''),
 
+            // Google Calendar (agency-wide OAuth app, used for all agent connections)
+            'google_calendar_client_id' => SystemSetting::getValue('google_calendar_client_id', ''),
+            'google_calendar_client_secret' => SystemSetting::getValue('google_calendar_client_secret', ''),
+
             // Billing
             'invoice_due_days' => SystemSetting::getValue('invoice_due_days', 7),
             'payment_link_expiry_days' => SystemSetting::getValue('payment_link_expiry_days', 14),
@@ -47,6 +51,7 @@ class SettingsController extends Controller
             'stripe_api_key' => !empty($settings['stripe_api_key']),
             'stripe_webhook_secret' => !empty($settings['stripe_webhook_secret']),
             'payoneer_api_key' => !empty($settings['payoneer_api_key']),
+            'google_calendar_client_secret' => !empty($settings['google_calendar_client_secret']),
         ];
 
         return view('admin.settings.index', compact('settings', 'hasValues'));
@@ -70,6 +75,10 @@ class SettingsController extends Controller
             // Payoneer (optional - only update if provided)
             'payoneer_api_key' => ['nullable', 'string'],
             'payoneer_partner_id' => ['nullable', 'string', 'max:100'],
+
+            // Google Calendar (optional - only update if provided)
+            'google_calendar_client_id' => ['nullable', 'string'],
+            'google_calendar_client_secret' => ['nullable', 'string'],
 
             // Billing
             'invoice_due_days' => ['required', 'integer', 'min:1', 'max:30'],
@@ -103,6 +112,14 @@ class SettingsController extends Controller
         }
         if ($request->filled('payoneer_partner_id')) {
             SystemSetting::setValue('payoneer_partner_id', $validated['payoneer_partner_id'], 'string');
+        }
+
+        // Save Google Calendar settings (only if provided)
+        if ($request->filled('google_calendar_client_id')) {
+            SystemSetting::setValue('google_calendar_client_id', $validated['google_calendar_client_id'], 'string');
+        }
+        if ($request->filled('google_calendar_client_secret')) {
+            SystemSetting::setValue('google_calendar_client_secret', $validated['google_calendar_client_secret'], 'encrypted', true);
         }
 
         // Save Billing settings

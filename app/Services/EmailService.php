@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Jobs\SendEmailJob;
+use App\Mail\MissedCallAlertMail;
 use App\Mail\NewReceiptUploadedMail;
+use App\Mail\PasswordResetMail;
 use App\Mail\PaymentConfirmationMail;
 use App\Mail\PaymentLinkMail;
 use App\Mail\PaymentReminderMail;
@@ -20,6 +22,7 @@ use App\Mail\TrialStartedMail;
 use App\Mail\UsageAlertMail;
 use App\Mail\UserInvitationMail;
 use App\Mail\WelcomeMail;
+use App\Models\CallLog;
 use App\Models\Invoice;
 use App\Models\Notification;
 use App\Models\Payment;
@@ -240,6 +243,22 @@ class EmailService
         );
     }
 
+    public function sendPasswordReset(User $user, string $token): void
+    {
+        $this->createNotificationAndDispatch(
+            mailable: new PasswordResetMail($user, $token),
+            recipientEmail: $user->email,
+            type: 'password_reset',
+            subject: 'Reset Your Password — ' . config('app.name', 'Foxiqo'),
+            body: "Password reset link sent to {$user->email}.",
+            companyId: $user->company_id,
+            userId: $user->id,
+            data: [
+                'user_id' => $user->id,
+            ]
+        );
+    }
+
     public function sendWelcomeEmail(User $user): void
     {
         $user->load('company');
@@ -288,6 +307,26 @@ class EmailService
             body: "Your free trial for {$subscription->agent->name} ends on {$subscription->trial_ends_at->format('M d, Y')}. After that, a subscription invoice will be sent.",
             companyId: $company->id,
             data: ['subscription_id' => $subscription->id]
+        );
+    }
+
+    public function sendMissedCallAlert(CallLog $callLog): void
+    {
+        $callLog->load('agent.company');
+        $agent = $callLog->agent;
+        $company = $agent->company;
+
+        $this->createNotificationAndDispatch(
+            mailable: new MissedCallAlertMail($callLog),
+            recipientEmail: $agent->missed_call_alert_recipient,
+            type: 'missed_call_alert',
+            subject: "Missed Call: {$agent->name}",
+            body: "{$agent->name} missed a call from {$callLog->from_number}.",
+            companyId: $company->id,
+            data: [
+                'agent_id' => $agent->id,
+                'call_log_id' => $callLog->id,
+            ]
         );
     }
 

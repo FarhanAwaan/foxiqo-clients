@@ -15,10 +15,12 @@ class Agent extends Model
     protected $fillable = [
         'uuid', 'company_id', 'retell_agent_id', 'name',
         'description', 'phone_number', 'agent_type', 'cost_per_minute', 'status',
+        'missed_call_email_alerts_enabled', 'missed_call_notification_email',
     ];
 
     protected $casts = [
         'cost_per_minute' => 'decimal:4',
+        'missed_call_email_alerts_enabled' => 'boolean',
     ];
 
     public function company(): BelongsTo
@@ -34,6 +36,16 @@ class Agent extends Model
     public function callLogs(): HasMany
     {
         return $this->hasMany(CallLog::class);
+    }
+
+    public function calendarConnection(): HasOne
+    {
+        return $this->hasOne(CalendarConnection::class);
+    }
+
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 
     public function scopeActive($query)
@@ -68,5 +80,14 @@ class Agent extends Model
     public function getWebhookUrl(): string
     {
         return url("/api/webhooks/retell/company/{$this->company->uuid}/agent/{$this->uuid}");
+    }
+
+    /**
+     * Where missed-call alerts should go: the agent's dedicated address if one
+     * was captured, otherwise the company's effective billing email.
+     */
+    public function getMissedCallAlertRecipientAttribute(): string
+    {
+        return $this->missed_call_notification_email ?: $this->company->effective_billing_email;
     }
 }
