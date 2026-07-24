@@ -11,90 +11,52 @@
 @endsection
 
 @section('content')
-    <div class="row row-deck row-cards">
-        <!-- Stats Cards -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="subheader">Active Agents</div>
-                    </div>
-                    <div class="h1 mb-3">{{ $activeSubscriptions }}</div>
-                    <div class="d-flex mb-2">
-                        <div>
-                            <span class="text-green d-inline-flex align-items-center lh-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
-                            </span>
-                            <span class="text-muted ms-1">of {{ $agents->count() }} total</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    @php
+        $usagePercent = $totalMinutesIncluded > 0 ? min(100, ($totalMinutesUsed / $totalMinutesIncluded) * 100) : null;
+    @endphp
 
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="subheader">Total Calls</div>
-                    </div>
-                    <div class="h1 mb-3">{{ $recentCalls->count() > 0 ? number_format($recentCalls->count()) : '0' }}</div>
-                    <div class="d-flex mb-2">
-                        <div>
-                            <span class="text-muted">Recent activity</span>
-                        </div>
-                    </div>
+    <!-- Hero Metric: Total Calls Handled -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row align-items-center g-4">
+                <div class="col-12 col-lg-auto">
+                    <div class="subheader mb-1">Total Calls Handled</div>
+                    <div class="hero-metric">{{ number_format($totalCallsCount) }}</div>
+                    <div class="text-muted mt-2">Across {{ $agents->count() }} {{ Str::plural('assistant', $agents->count()) }}</div>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="subheader">Minutes Used</div>
-                    </div>
-                    <div class="h1 mb-3">{{ number_format($totalMinutesUsed, 1) }}</div>
-                    <div class="d-flex mb-2">
-                        <div>
-                            @if($totalMinutesIncluded > 0)
-                                @php
-                                    $usagePercent = min(100, ($totalMinutesUsed / $totalMinutesIncluded) * 100);
-                                @endphp
-                                <span class="{{ $usagePercent > 80 ? 'text-warning' : 'text-muted' }}">
-                                    {{ number_format($usagePercent, 1) }}% of {{ number_format($totalMinutesIncluded) }} included
-                                </span>
+                <div class="col-12 col-lg-auto d-none d-lg-block">
+                    <div class="hero-metric-divider"></div>
+                </div>
+
+                <div class="col-12 col-lg">
+                    <div class="row g-4">
+                        <div class="col-6 col-md-4">
+                            <div class="subheader">Active Assistants</div>
+                            <div class="hero-metric-secondary">{{ $activeSubscriptions }}</div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="subheader">Minutes Used</div>
+                            <div class="hero-metric-secondary">{{ number_format($totalMinutesUsed, 1) }}</div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="subheader">Plan Usage</div>
+                            @if($usagePercent !== null)
+                                <div class="hero-metric-secondary {{ $usagePercent > 80 ? 'text-warning' : '' }}">{{ number_format($usagePercent, 0) }}%</div>
+                                <div class="progress progress-sm mt-1">
+                                    <div class="progress-bar {{ $usagePercent > 80 ? 'bg-warning' : 'bg-primary' }}" style="width: {{ $usagePercent }}%"></div>
+                                </div>
                             @else
-                                <span class="text-muted">No plan active</span>
+                                <div class="hero-metric-secondary text-muted">--</div>
                             @endif
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="subheader">Plan Usage</div>
-                    </div>
-                    @if($totalMinutesIncluded > 0)
-                        @php
-                            $usagePercent = min(100, ($totalMinutesUsed / $totalMinutesIncluded) * 100);
-                        @endphp
-                        <div class="h1 mb-3">{{ number_format($usagePercent, 0) }}%</div>
-                        <div class="progress progress-sm">
-                            <div class="progress-bar {{ $usagePercent > 80 ? 'bg-warning' : 'bg-primary' }}" style="width: {{ $usagePercent }}%"></div>
-                        </div>
-                    @else
-                        <div class="h1 mb-3 text-muted">--</div>
-                        <div class="text-muted small">No active subscriptions</div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
+    <div class="row row-deck row-cards">
         <!-- Agents Overview -->
         <div class="col-lg-6">
             <div class="card">

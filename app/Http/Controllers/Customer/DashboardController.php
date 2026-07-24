@@ -17,6 +17,8 @@ class DashboardController extends Controller
         $totalMinutesIncluded = $agents->sum(fn ($a) => $a->subscription?->plan?->included_minutes ?? 0);
         $activeSubscriptions  = $agents->filter(fn ($a) => $a->subscription?->status === 'active')->count();
 
+        $totalCallsCount = CallLog::whereIn('agent_id', $agents->pluck('id'))->count();
+
         $recentCalls = CallLog::whereIn('agent_id', $agents->pluck('id'))
             ->with('agent')
             ->latest()
@@ -29,6 +31,7 @@ class DashboardController extends Controller
             'totalMinutesUsed'     => $totalMinutesUsed,
             'totalMinutesIncluded' => $totalMinutesIncluded,
             'activeSubscriptions'  => $activeSubscriptions,
+            'totalCallsCount'      => $totalCallsCount,
             'recentCalls'          => $recentCalls,
         ]);
     }

@@ -6,18 +6,18 @@ window.DashboardCharts = (function ($) {
     'use strict';
 
     var COLORS = {
-        primary:       '#206bc4',
-        primaryFill:   'rgba(32,107,196,0.10)',
-        success:       '#2fb344',
-        successFill:   'rgba(47,179,68,0.10)',
-        danger:        '#d63939',
-        dangerFill:    'rgba(214,57,57,0.10)',
-        warning:       '#f76707',
-        warningFill:   'rgba(247,103,7,0.10)',
+        primary:       '#f96900',
+        primaryFill:   'rgba(249,105,0,0.10)',
+        success:       '#10b981',
+        successFill:   'rgba(16,185,129,0.10)',
+        danger:        '#ef4444',
+        dangerFill:    'rgba(239,68,68,0.10)',
+        warning:       '#f59e0b',
+        warningFill:   'rgba(245,158,11,0.10)',
         neutral:       '#94a3b8',
-        positive:      '#2fb344',
-        negative:      '#d63939',
-        gridLine:      'rgba(0,0,0,0.06)',
+        positive:      '#10b981',
+        negative:      '#ef4444',
+        gridLine:      'rgba(0,0,0,0.05)',
         textMuted:     '#64748b',
     };
 

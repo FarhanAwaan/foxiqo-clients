@@ -5,6 +5,8 @@
         </button>
 
         <div class="navbar-nav flex-row order-md-last ms-auto">
+            @include('components.theme-toggle')
+
             <!-- Notifications Dropdown -->
             <div class="nav-item dropdown d-none d-md-flex me-3">
                 <a href="#" class="nav-link px-0 d-none" data-bs-toggle="dropdown" tabindex="-1" aria-label="Show notifications">

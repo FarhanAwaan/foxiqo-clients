@@ -236,46 +236,4 @@
             </div>
         </div>
     @endif
-
-<style>
-    .agent-card {
-        height: 320px;
-    }
-    .agent-stat {
-        background-color: #f8f9fa;
-        border-radius: 6px;
-        padding: 8px 4px;
-        text-align: center;
-    }
-    .agent-stat-value {
-        font-size: 1.25rem;
-        font-weight: 600;
-        line-height: 1.2;
-    }
-    .agent-stat-label {
-        font-size: 0.75rem;
-        color: #6c757d;
-        margin-top: 2px;
-    }
-    .usage-bar {
-        height: 6px;
-        background-color: #e9ecef;
-        border-radius: 3px;
-        overflow: hidden;
-    }
-    .usage-bar-fill {
-        height: 100%;
-        border-radius: 3px;
-        transition: width 0.3s ease;
-    }
-    .usage-bar-fill.usage-normal {
-        background-color: #206bc4;
-    }
-    .usage-bar-fill.usage-warning {
-        background-color: #f59f00;
-    }
-    .usage-bar-fill.usage-danger {
-        background-color: #d63939;
-    }
-</style>
 @endsection

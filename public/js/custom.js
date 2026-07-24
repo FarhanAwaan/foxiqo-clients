@@ -33,6 +33,7 @@
     // ============================================
 
     function initializeTooltips() {
+        if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -179,13 +180,11 @@
             navigator.clipboard.writeText(text).then(function() {
                 if (btn) {
                     var originalHtml = btn.innerHTML;
-                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm text-success" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
-                    btn.classList.remove('btn-outline-primary');
-                    btn.classList.add('btn-success');
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
+                    btn.classList.add('copy-success');
                     setTimeout(function() {
                         btn.innerHTML = originalHtml;
-                        btn.classList.remove('btn-success');
-                        btn.classList.add('btn-outline-primary');
+                        btn.classList.remove('copy-success');
                     }, 2000);
                 }
             }).catch(function() {
@@ -211,13 +210,11 @@
             }
             if (btn) {
                 var originalHtml = btn.innerHTML;
-                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm text-success" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
-                btn.classList.remove('btn-outline-primary');
-                btn.classList.add('btn-success');
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
+                btn.classList.add('copy-success');
                 setTimeout(function() {
                     btn.innerHTML = originalHtml;
-                    btn.classList.remove('btn-success');
-                    btn.classList.add('btn-outline-primary');
+                    btn.classList.remove('copy-success');
                 }, 2000);
             }
         }

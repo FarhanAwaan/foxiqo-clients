@@ -47,8 +47,20 @@ class AgentController extends Controller
         $avgDuration = $totalCalls > 0 ? $agent->callLogs()->avg('duration_seconds') : 0;
         $inboundCalls = $agent->callLogs()->where('direction', 'inbound')->count();
         $outboundCalls = $agent->callLogs()->where('direction', 'outbound')->count();
+        $upcomingAppointments = $agent->appointments()->upcoming()->orderBy('starts_at')->limit(10)->get();
 
-        return view('customer.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls'));
+        $viewData = [
+            'isAdmin' => false,
+            'recentCallRowsPartial' => 'customer.agents._recent_call_rows',
+            'callsIndexUrl' => route('customer.calls.index', $agent),
+            'callVolumeUrl' => route('customer.agents.charts.call-volume', $agent),
+            'sentimentUrl' => route('customer.agents.charts.sentiment', $agent),
+            'companyUrl' => null,
+            'subscriptionUrl' => $agent->subscription ? route('customer.subscriptions.show', $agent->subscription) : null,
+            'createSubscriptionUrl' => null,
+        ];
+
+        return view('customer.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls', 'upcomingAppointments') + $viewData);
     }
 
     // ── AJAX: Call Volume for this agent ──────────────────────────────

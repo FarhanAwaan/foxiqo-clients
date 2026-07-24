@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        (function () {
+            var theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
     <title>@yield('title', 'Dashboard') - {{ config('app.name') }}</title>
 
     {{-- Favicons --}}
@@ -19,12 +25,17 @@
     <meta name="msapplication-TileColor" content="#f26422">
     <meta name="msapplication-TileImage" content="{{ asset('images/logos/favicons/android-chrome-192x192.png') }}">
 
-    <!-- Tabler CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-vendors.min.css">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
+    @if($brandColor = auth()->user()?->company?->brand_color)
+        <style>
+            :root {
+                --tblr-primary: {{ $brandColor }};
+                --tblr-link-color: {{ $brandColor }};
+                --tblr-link-hover-color: {{ $brandColor }};
+            }
+        </style>
+    @endif
 
     @stack('styles')
 </head>
@@ -34,6 +45,8 @@
         @include('components.sidebar.customer')
 
         <div class="page-wrapper">
+            @include('components.page-loader')
+
             <!-- Header -->
             @include('components.header.customer')
 
@@ -86,9 +99,6 @@
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <!-- Tabler JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

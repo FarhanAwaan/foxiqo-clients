@@ -6,7 +6,8 @@
 
         <h1 class="navbar-brand navbar-brand-autodark">
             <a href="{{ route('customer.dashboard') }}">
-                <img class="rounded-2" src="{{ asset('images/logos/logo.webp') }}" alt="{{ config('app.name') }}" style="max-height: 48px;">
+                @php $company = auth()->user()->company; @endphp
+                <img class="rounded-2" src="{{ $company?->logo_url ?? asset('images/logos/logo.webp') }}" alt="{{ $company?->name ?? config('app.name') }}" style="max-height: 48px;">
             </a>
         </h1>
 

@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        (function () {
+            var theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
     <title>@yield('title', 'Login') - {{ config('app.name') }}</title>
 
     {{-- Favicons --}}
@@ -19,16 +25,14 @@
     <meta name="msapplication-TileColor" content="#f26422">
     <meta name="msapplication-TileImage" content="{{ asset('images/logos/favicons/android-chrome-192x192.png') }}">
 
-    <!-- Tabler CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('styles')
 </head>
 <body class="d-flex flex-column bg-white">
     <div class="page page-center">
+        @include('components.page-loader')
+
         <div class="container container-tight py-4">
             <!-- Logo -->
             <div class="text-center mb-4">
@@ -52,9 +56,6 @@
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <!-- Tabler JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
 
     <!-- Custom JS -->
     <script src="{{ asset('js/custom.js') }}"></script>

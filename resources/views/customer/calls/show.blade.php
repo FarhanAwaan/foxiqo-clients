@@ -32,6 +32,9 @@
                             @case('ended')
                                 <span class="badge bg-blue-lt">Ended</span>
                                 @break
+                            @case('started')
+                                <span class="badge bg-primary-lt"><span class="badge-live-dot"></span>Live</span>
+                                @break
                             @default
                                 <span class="badge bg-yellow-lt">{{ ucfirst($callLog->call_status) }}</span>
                         @endswitch

@@ -35,8 +35,11 @@
                 @case('analyzed')
                     <span class="badge bg-green-lt">Completed</span>
                     @break
-                @case('in_progress')
-                    <span class="badge bg-blue-lt">In Progress</span>
+                @case('started')
+                    <span class="badge bg-primary-lt"><span class="badge-live-dot"></span>Live</span>
+                    @break
+                @case('ended')
+                    <span class="badge bg-yellow-lt">Processing</span>
                     @break
                 @case('failed')
                     <span class="badge bg-red-lt">Failed</span>
