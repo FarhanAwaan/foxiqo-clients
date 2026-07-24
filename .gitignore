@@ -34,3 +34,6 @@ package-lock.json
 composer.lock
 .htaccess
 /public/.htaccess
+/*.md
+!/PROJECT.md
+!/README.md
