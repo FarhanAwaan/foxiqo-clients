@@ -37,3 +37,4 @@ composer.lock
 /*.md
 !/PROJECT.md
 !/README.md
+/.claude
