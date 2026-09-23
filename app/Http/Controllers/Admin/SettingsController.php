@@ -5,12 +5,24 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class SettingsController extends Controller
 {
+    /**
+     * Encrypted settings this screen keeps masked and only reveals on request
+     * (see reveal()); doubles as the whitelist for that endpoint.
+     */
+    public const SECRET_KEYS = [
+        'retell_api_key', 'retell_webhook_secret',
+        'stripe_api_key', 'stripe_webhook_secret',
+        'paddle_api_key', 'paddle_webhook_secret', 'paddle_client_side_token',
+        'google_calendar_client_secret',
+    ];
+
     public function __construct(
         protected AuditService $auditService
     ) {}
@@ -53,16 +65,9 @@ class SettingsController extends Controller
         ];
 
         // Check which sensitive fields have values (for display purposes)
-        $hasValues = [
-            'retell_api_key' => !empty($settings['retell_api_key']),
-            'retell_webhook_secret' => !empty($settings['retell_webhook_secret']),
-            'stripe_api_key' => !empty($settings['stripe_api_key']),
-            'stripe_webhook_secret' => !empty($settings['stripe_webhook_secret']),
-            'paddle_api_key' => !empty($settings['paddle_api_key']),
-            'paddle_webhook_secret' => !empty($settings['paddle_webhook_secret']),
-            'paddle_client_side_token' => !empty($settings['paddle_client_side_token']),
-            'google_calendar_client_secret' => !empty($settings['google_calendar_client_secret']),
-        ];
+        $hasValues = collect(self::SECRET_KEYS)
+            ->mapWithKeys(fn ($key) => [$key => !empty($settings[$key])])
+            ->all();
 
         return view('admin.settings.index', compact('settings', 'hasValues'));
     }
@@ -160,5 +165,21 @@ class SettingsController extends Controller
         SystemSetting::setValue('usage_alert_minutes_threshold', $validated['usage_alert_minutes_threshold'], 'integer');
 
         return back()->with('success', 'Settings updated successfully.');
+    }
+
+    /**
+     * Returns one stored secret in plain text, only when its eye button is clicked, so
+     * secrets never sit in the page source. Every reveal is audit-logged (key name only,
+     * never the value).
+     */
+    public function reveal(string $key): JsonResponse
+    {
+        abort_unless(in_array($key, self::SECRET_KEYS, true), 404);
+
+        $this->auditService->logAction('setting_revealed', null, ['key' => $key]);
+
+        return response()
+            ->json(['value' => (string) SystemSetting::getValue($key, '')])
+            ->header('Cache-Control', 'no-store, private');
     }
 }

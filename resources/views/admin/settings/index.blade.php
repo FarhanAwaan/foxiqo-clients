@@ -304,7 +304,7 @@
                                 @error('paddle_client_side_token')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
-                                <div class="form-hint">Encrypted at rest, like the fields above. Leave blank to keep existing value — this is still the token that gets sent to the browser on the checkout page itself (that part's unavoidable, it's how Paddle.js works), but it's no longer sitting in plain text in this settings screen or the database.</div>
+                                <div class="form-hint">Encrypted at rest, like the fields above. Leave blank to keep existing value — this is still the token that gets sent to the browser on the checkout page itself (that part's unavoidable, it's how Paddle.js works), but it's stored encrypted and only shown here when you click the eye.</div>
                             </div>
                         </div>
                     </div>
@@ -464,7 +464,7 @@
                             <div class="ms-3">
                                 <h4 class="mb-1">Sensitive Data</h4>
                                 <p class="text-muted mb-0 small">
-                                    API keys and secrets are encrypted before being stored. Leave fields blank to keep existing values.
+                                    API keys and secrets are encrypted before being stored. Leave fields blank to keep existing values, or click a field's eye to view its stored value (each view is logged).
                                 </p>
                             </div>
                         </div>
@@ -576,19 +576,61 @@
     </form>
 @endsection
 
+@push('styles')
+<style>
+    /* A stored secret shows its bullets at full strength, so it reads as "pre-filled but hidden" rather than an empty field. */
+    .form-control.is-configured::placeholder { color: inherit; opacity: 1; }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle password visibility
+    // Secrets that have a stored value. Their real values aren't in this page — the eye
+    // button fetches one from the server on click (admin-only, audit-logged).
+    const stored = @json(array_keys(array_filter($hasValues)));
+    const revealUrl = @json(url('admin/settings/reveal'));
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const revealed = {}; // fetched values still on screen, so hiding can tell "untouched" from "edited"
+
     document.querySelectorAll('.toggle-password').forEach(function(button) {
-        button.addEventListener('click', function() {
-            const targetId = this.getAttribute('data-target');
+        const targetId = button.getAttribute('data-target');
+
+        if (stored.includes(targetId)) {
+            document.getElementById(targetId).classList.add('is-configured');
+            button.title = 'Show stored value';
+        }
+
+        // Toggle password visibility
+        button.addEventListener('click', async function() {
             const input = document.getElementById(targetId);
 
             if (input.type === 'password') {
+                if (stored.includes(targetId) && input.value === '') {
+                    this.disabled = true;
+                    try {
+                        const response = await fetch(revealUrl + '/' + targetId, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                        });
+                        const data = await response.json();
+                        if (!response.ok || typeof data.value !== 'string') throw new Error('unexpected response');
+                        revealed[targetId] = data.value;
+                        input.value = data.value;
+                    } catch (e) {
+                        alert('Could not load the stored value. Reload the page and try again — your session may have expired.');
+                        return;
+                    } finally {
+                        this.disabled = false;
+                    }
+                }
+
                 input.type = 'text';
                 this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828" /><path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87" /><path d="M3 3l18 18" /></svg>';
             } else {
+                if (input.value === revealed[targetId]) input.value = ''; // untouched → back to blank, i.e. keep existing
+                delete revealed[targetId];
                 input.type = 'password';
                 this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>';
             }

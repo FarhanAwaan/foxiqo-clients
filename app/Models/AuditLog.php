@@ -65,6 +65,7 @@ class AuditLog extends Model
             'user_permissions_updated' => 'Permissions Updated',
             'role_updated' => 'Role Updated',
             'permission_created' => 'Permission Created',
+            'setting_revealed' => 'Secret Revealed',
             default => str_replace('_', ' ', ucfirst($this->action)),
         };
     }
@@ -80,6 +81,7 @@ class AuditLog extends Model
             'invoice_created', 'payment_link_sent', 'usage_invoice_created' => 'text-primary',
             'payment_received', 'paddle_renewal_reconciled', 'paddle_trial_converted' => 'text-success',
             'paddle_payment_failed', 'paddle_adjustment' => 'text-danger',
+            'setting_revealed' => 'text-warning',
             'plan_created', 'plan_updated' => 'text-info',
             'login' => 'text-primary',
             'logout' => 'text-muted',
