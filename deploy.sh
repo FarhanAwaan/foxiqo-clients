@@ -28,11 +28,14 @@ git pull origin production
 echo "==> Installing PHP dependencies"
 composer install --no-dev --optimize-autoloader --no-interaction
 
-echo "==> Running database migrations"
-php artisan migrate --force
-
+# Clear BEFORE migrating, not after: while the previous deploy's config cache is
+# still in place, config() knows nothing a release added (e.g. the permission
+# tables migration reads config('permission.*') and aborts without it).
 echo "==> Clearing stale caches"
 php artisan optimize:clear
+
+echo "==> Running database migrations"
+php artisan migrate --force
 
 echo "==> Rebuilding caches (config, routes, views, events)"
 php artisan optimize
