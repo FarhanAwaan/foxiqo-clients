@@ -16,19 +16,29 @@ return new class extends Migration
         // is left untouched — only its nullability changes.
         DB::statement('ALTER TABLE invoices MODIFY COLUMN subscription_id BIGINT UNSIGNED NULL');
 
-        Schema::table('invoices', function (Blueprint $table) {
-            // Paddle's own transaction status (draft/billed/paid/completed/canceled/
-            // past_due), kept separate from our own workflow `status` — this is what
-            // "track the actual status from Paddle" means: our status drives our
-            // workflow (draft/sent/overdue), this one is Paddle's live truth for
-            // transactions that went through Paddle at all (null otherwise).
-            $table->string('paddle_status', 30)->nullable()->after('paddle_transaction_id');
-        });
+        // Guarded because MySQL DDL isn't transactional: if a later statement in
+        // this migration fails, this column is already there when it's re-run.
+        if (!Schema::hasColumn('invoices', 'paddle_status')) {
+            Schema::table('invoices', function (Blueprint $table) {
+                // Paddle's own transaction status (draft/billed/paid/completed/canceled/
+                // past_due), kept separate from our own workflow `status` — this is what
+                // "track the actual status from Paddle" means: our status drives our
+                // workflow (draft/sent/overdue), this one is Paddle's live truth for
+                // transactions that went through Paddle at all (null otherwise).
+                $table->string('paddle_status', 30)->nullable()->after('paddle_transaction_id');
+            });
+        }
 
-        // MySQL enums need a raw ALTER — same pattern as the closer-role enum
-        // addition earlier in this app's history.
-        DB::statement("ALTER TABLE invoices MODIFY COLUMN status ENUM('draft','sent','paid','overdue','cancelled','refunded') DEFAULT 'draft'");
-        DB::statement("ALTER TABLE invoices MODIFY COLUMN invoice_type VARCHAR(20) DEFAULT 'subscription'");
+        // Extends the column's CURRENT enum instead of restating a list: production's
+        // already holds 'voided' (InvoiceService::voidInvoice), and a hardcoded list that
+        // left it out made MySQL reject the ALTER with "Data truncated". NOT NULL is
+        // restated because MODIFY replaces the whole column definition.
+        $type = $this->columnType('invoices', 'status');
+        if (!str_contains($type, "'refunded'")) {
+            $type = substr($type, 0, -1) . ",'refunded')";
+        }
+        DB::statement("ALTER TABLE invoices MODIFY COLUMN status {$type} NOT NULL DEFAULT 'draft'");
+        DB::statement("ALTER TABLE invoices MODIFY COLUMN invoice_type VARCHAR(20) NOT NULL DEFAULT 'subscription'");
     }
 
     public function down(): void
@@ -38,9 +48,18 @@ return new class extends Migration
         });
 
         DB::statement("UPDATE invoices SET status = 'cancelled' WHERE status = 'refunded'");
-        DB::statement("ALTER TABLE invoices MODIFY COLUMN status ENUM('draft','sent','paid','overdue','cancelled') DEFAULT 'draft'");
+        $type = str_replace(",'refunded'", '', $this->columnType('invoices', 'status'));
+        DB::statement("ALTER TABLE invoices MODIFY COLUMN status {$type} NOT NULL DEFAULT 'draft'");
 
         DB::statement('DELETE FROM invoices WHERE subscription_id IS NULL');
         DB::statement('ALTER TABLE invoices MODIFY COLUMN subscription_id BIGINT UNSIGNED NOT NULL');
+    }
+
+    private function columnType(string $table, string $column): string
+    {
+        return DB::selectOne(
+            'SELECT COLUMN_TYPE AS col_type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [$table, $column]
+        )->col_type;
     }
 };
