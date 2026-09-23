@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
             $table->foreignId('payment_link_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('amount', 10, 2);
-            $table->string('provider', 150); //'payoneer', 'stripe', 'manual', 'internal'
+            $table->string('provider', 150); //'nsave', 'bank_transfer', 'paddle', 'stripe', 'manual', 'internal'
             $table->string('provider_transaction_id')->nullable();
             $table->string('status', 150)->default('completed'); //'pending', 'completed', 'failed', 'refunded'
             $table->timestamp('paid_at')->nullable();

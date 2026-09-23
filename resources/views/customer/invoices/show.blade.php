@@ -117,8 +117,16 @@
                             <div class="datagrid-content">{{ $invoice->subscription->plan->name ?? 'N/A' }}</div>
                         </div>
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Included Minutes</div>
-                            <div class="datagrid-content">{{ number_format($invoice->subscription->plan->included_minutes ?? 0) }} min</div>
+                            <div class="datagrid-title">Invoice Type</div>
+                            <div class="datagrid-content">
+                                @if($invoice->isUsageInvoice())
+                                    Usage &mdash; {{ number_format($invoice->usage_minutes) }} min
+                                @elseif($invoice->isActivationInvoice())
+                                    One-Time Activation Fee
+                                @else
+                                    Monthly Retainer
+                                @endif
+                            </div>
                         </div>
                         <div class="datagrid-item">
                             <div class="datagrid-title">Subscription Status</div>

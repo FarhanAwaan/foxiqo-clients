@@ -67,7 +67,7 @@
             <div class="card-actions">
                 <form action="{{ route('admin.invoices.index') }}" method="GET" class="d-flex gap-2 flex-wrap">
                     <select name="company_id" class="form-select form-select-sm" style="width: 180px;" onchange="this.form.submit()">
-                        <option value="">All Companies</option>
+                        <option value="">All Customers</option>
                         @foreach($companies as $company)
                             <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
                                 {{ $company->name }}
@@ -93,7 +93,8 @@
                 <thead>
                     <tr>
                         <th>Invoice #</th>
-                        <th>Company</th>
+                        <th>Type</th>
+                        <th>Customer</th>
                         <th>Agent</th>
                         <th>Amount</th>
                         <th>Billing Period</th>
@@ -109,6 +110,15 @@
                                 <a href="{{ route('admin.invoices.show', $invoice) }}" class="text-reset">
                                     <strong>{{ $invoice->invoice_number }}</strong>
                                 </a>
+                            </td>
+                            <td>
+                                @if($invoice->isUsageInvoice())
+                                    <span class="badge bg-purple-lt">Usage &middot; {{ number_format($invoice->usage_minutes) }} min</span>
+                                @elseif($invoice->isActivationInvoice())
+                                    <span class="badge bg-orange-lt">Activation</span>
+                                @else
+                                    <span class="badge bg-blue-lt">Retainer</span>
+                                @endif
                             </td>
                             <td>
                                 @if($invoice->company)
@@ -202,7 +212,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="empty-state py-4">
                                     <div class="empty-state-icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 7l1 0" /><path d="M9 13l6 0" /><path d="M13 17l2 0" /></svg>
@@ -247,8 +257,9 @@
                                 <label class="form-label required">Payment Provider</label>
                                 <select name="provider" class="form-select" required>
                                     <option value="manual">Manual Payment</option>
+                                    <option value="bank_transfer">Bank Transfer (Nsave)</option>
+                                    <option value="paddle">Paddle</option>
                                     <option value="stripe">Stripe</option>
-                                    <option value="payoneer">Payoneer</option>
                                 </select>
                             </div>
 

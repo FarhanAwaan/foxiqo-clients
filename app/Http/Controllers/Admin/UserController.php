@@ -10,6 +10,8 @@ use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -45,8 +47,9 @@ class UserController extends Controller
 
         $users = $query->latest()->paginate(15)->withQueryString();
         $companies = Company::orderBy('name')->get();
+        $roleLabels = Role::pluck('label', 'name');
 
-        return view('admin.users.index', compact('users', 'companies'));
+        return view('admin.users.index', compact('users', 'companies', 'roleLabels'));
     }
 
     public function create(): View
@@ -59,7 +62,9 @@ class UserController extends Controller
             $selectedCompanyId = $selectedCompany?->id;
         }
 
-        return view('admin.users.create', compact('companies', 'selectedCompanyId'));
+        $roleLabels = Role::pluck('label', 'name');
+
+        return view('admin.users.create', compact('companies', 'selectedCompanyId', 'roleLabels'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -69,13 +74,14 @@ class UserController extends Controller
             'last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'unique:users'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'company_id' => ['required', 'exists:companies,id'],
-            'role' => ['required', 'in:admin,customer'],
+            'company_id' => ['nullable', 'required_if:role,customer', 'exists:companies,id'],
+            'role' => ['required', 'in:admin,customer,closer'],
         ]);
 
         $validated['status'] = 'pending';
 
         $user = User::create($validated);
+        $user->syncRoles([$user->role]);
         $token = $user->generateSignupToken();
 
         $this->auditService->log('user_created', $user);
@@ -104,15 +110,82 @@ class UserController extends Controller
                 ->get();
         }
 
-        return view('admin.users.show', compact('user', 'companyInvoices', 'companyAgents'));
+        $permissions = Permission::orderBy('name')->get();
+        $directPermissions = $user->getDirectPermissions()->pluck('name');
+        $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+
+        $accessibleCompanies = collect();
+        $accessibleCompanyIds = collect();
+        $accessibleAgentIds = collect();
+
+        if ($user->isCloser()) {
+            $accessibleCompanies = Company::where('status', 'active')
+                ->orderBy('name')
+                ->with('agents')
+                ->get();
+            $accessibleCompanyIds = $user->accessibleCompanies()->pluck('companies.id');
+            $accessibleAgentIds = $user->accessibleAgents()->pluck('agents.id');
+        }
+
+        return view('admin.users.show', compact(
+            'user', 'companyInvoices', 'companyAgents',
+            'permissions', 'directPermissions', 'rolePermissions',
+            'accessibleCompanies', 'accessibleCompanyIds', 'accessibleAgentIds'
+        ));
+    }
+
+    /**
+     * Grant/revoke permissions directly on this one user, independent of
+     * their role. auth()->user()->can() already checks both direct and
+     * role-derived permissions, so nothing else needs to change for a
+     * direct grant to take effect.
+     */
+    public function updatePermissions(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'permissions' => ['array'],
+            'permissions.*' => ['string', 'exists:permissions,name'],
+        ]);
+
+        $user->syncPermissions($validated['permissions'] ?? []);
+
+        $this->auditService->log('user_permissions_updated', $user);
+
+        return back()->with('success', "Permissions updated for {$user->full_name}.");
+    }
+
+    /**
+     * Grant/revoke which specific Companies (and, within them, which specific
+     * Agents) this closer/manager may see — e.g. one demo customer + one demo
+     * assistant for sales calls. See App\Http\Controllers\Closer\* for how these
+     * grants are enforced.
+     */
+    public function updateAccess(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($user->isCloser(), 404);
+
+        $validated = $request->validate([
+            'companies' => ['array'],
+            'companies.*' => ['integer', 'exists:companies,id'],
+            'agents' => ['array'],
+            'agents.*' => ['integer', 'exists:agents,id'],
+        ]);
+
+        $user->accessibleCompanies()->sync($validated['companies'] ?? []);
+        $user->accessibleAgents()->sync($validated['agents'] ?? []);
+
+        $this->auditService->log('user_access_updated', $user);
+
+        return back()->with('success', "Customer & assistant access updated for {$user->full_name}.");
     }
 
     public function edit(User $user): View
     {
         $companies = Company::where('status', 'active')->orderBy('name')->get();
         $selectedCompanyId = $user->company_id;
+        $roleLabels = Role::pluck('label', 'name');
 
-        return view('admin.users.edit', compact('user', 'companies', 'selectedCompanyId'));
+        return view('admin.users.edit', compact('user', 'companies', 'selectedCompanyId', 'roleLabels'));
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -122,13 +195,14 @@ class UserController extends Controller
             'last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'unique:users,email,' . $user->id],
             'phone' => ['nullable', 'string', 'max:20'],
-            'company_id' => ['nullable', 'exists:companies,id'],
-            'role' => ['required', 'in:admin,customer'],
+            'company_id' => ['nullable', 'required_if:role,customer', 'exists:companies,id'],
+            'role' => ['required', 'in:admin,customer,closer'],
             'status' => ['required', 'in:pending,active,suspended'],
         ]);
 
         $oldValues = $user->toArray();
         $user->update($validated);
+        $user->syncRoles([$user->role]);
 
         $this->auditService->log('user_updated', $user, $oldValues);
 

@@ -13,6 +13,7 @@ class Subscription extends Model
 
     protected $fillable = [
         'uuid', 'agent_id', 'company_id', 'plan_id', 'status', 'custom_price',
+        'paddle_subscription_id',
         'current_period_start', 'current_period_end', 'minutes_used',
         'circuit_breaker_triggered', 'circuit_breaker_triggered_at',
         'activated_at', 'expires_at', 'cancelled_at', 'cancellation_reason',
@@ -112,10 +113,17 @@ class Subscription extends Model
             ->whereBetween('current_period_end', [now(), now()->addDays($days)]);
     }
 
+    /**
+     * Trials this app's own cron should convert to paid + invoice directly.
+     * Excludes Paddle-linked trials — Paddle owns that clock and charges the
+     * customer's card itself; the renewal webhook reconciles those when Paddle
+     * actually bills, not on this app's trial_days countdown.
+     */
     public function scopeTrialExpired($query)
     {
         return $query->where('status', 'active')
             ->where('is_trial', true)
+            ->whereNull('paddle_subscription_id')
             ->where('trial_ends_at', '<=', now());
     }
 

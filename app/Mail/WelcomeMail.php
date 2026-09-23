@@ -26,7 +26,11 @@ class WelcomeMail extends Mailable
 
     public function content(): Content
     {
-        $dashboardRoute = $this->user->isAdmin() ? 'admin.dashboard' : 'customer.dashboard';
+        $dashboardRoute = match (true) {
+            $this->user->isAdmin() => 'admin.dashboard',
+            $this->user->isCloser() => 'deals.index',
+            default => 'customer.dashboard',
+        };
 
         return new Content(
             view: 'emails.welcome',

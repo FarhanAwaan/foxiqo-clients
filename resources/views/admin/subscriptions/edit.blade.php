@@ -33,9 +33,9 @@
                             <small class="text-muted">Assistant cannot be changed. Create a new subscription for a different assistant.</small>
                         </div>
 
-                        <!-- Company Info (Read-only) -->
+                        <!-- Customer Info (Read-only) -->
                         <div class="mb-3">
-                            <label class="form-label">Company</label>
+                            <label class="form-label">Customer</label>
                             <div class="form-control-plaintext">
                                 <a href="{{ route('admin.companies.show', $subscription->company) }}">
                                     {{ $subscription->company?->name }}

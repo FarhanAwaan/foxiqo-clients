@@ -101,7 +101,15 @@
                         <td>
                             @if($invoice->subscription?->agent)
                                 <div>{{ $invoice->subscription->agent->name }}</div>
-                                <div class="text-muted small">{{ $invoice->subscription->plan->name ?? 'N/A' }}</div>
+                                <div class="text-muted small">
+                                    @if($invoice->isUsageInvoice())
+                                        Usage &middot; {{ number_format($invoice->usage_minutes) }} min
+                                    @else
+                                        {{ $invoice->subscription->plan->name ?? 'N/A' }}
+                                    @endif
+                                </div>
+                            @elseif($invoice->isActivationInvoice())
+                                <span class="text-muted">Activation Fee</span>
                             @else
                                 <span class="text-muted">-</span>
                             @endif

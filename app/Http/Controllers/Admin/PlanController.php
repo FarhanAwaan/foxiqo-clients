@@ -47,7 +47,7 @@ class PlanController extends Controller
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'included_minutes' => ['required', 'integer', 'min:0'],
-            'overage_rate' => ['nullable', 'numeric', 'min:0'],
+            'per_minute_rate' => ['nullable', 'numeric', 'min:0'],
             'is_custom' => ['boolean'],
             'company_id' => ['nullable', 'required_if:is_custom,1', 'exists:companies,id'],
         ]);
@@ -87,7 +87,7 @@ class PlanController extends Controller
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'included_minutes' => ['required', 'integer', 'min:0'],
-            'overage_rate' => ['nullable', 'numeric', 'min:0'],
+            'per_minute_rate' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ]);
 

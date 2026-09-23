@@ -31,7 +31,7 @@
                     </tr>
                     @if($company)
                     <tr>
-                        <td style="padding:4px 0; color:#6c757d; font-size:13px;">Company</td>
+                        <td style="padding:4px 0; color:#6c757d; font-size:13px;">Customer</td>
                         <td style="padding:4px 0; color:#1a1a2e; text-align:right;">{{ $company->name }}</td>
                     </tr>
                     @endif

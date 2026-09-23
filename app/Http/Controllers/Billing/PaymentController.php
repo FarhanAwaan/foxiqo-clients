@@ -7,6 +7,7 @@ use App\Models\PaymentLink;
 use App\Models\PaymentReceipt;
 use App\Services\EmailService;
 use App\Services\InvoiceService;
+use App\Services\PaymentProviderService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -102,6 +103,10 @@ class PaymentController extends Controller
         ]);
 
         if ($request->payment_method === 'bank_transfer') {
+            if (!PaymentProviderService::isEnabled('nsave')) {
+                return back()->with('error', 'Bank transfer is temporarily unavailable. Please contact us.');
+            }
+
             return redirect()->route('billing.payment.bank-details', $token);
         }
 
@@ -114,6 +119,10 @@ class PaymentController extends Controller
      */
     public function bankDetails(string $token): View|RedirectResponse
     {
+        if (!PaymentProviderService::isEnabled('nsave')) {
+            return view('billing.provider-unavailable');
+        }
+
         $paymentLink = PaymentLink::where('payment_token', $token)
             ->with(['invoice.company', 'receipts'])
             ->firstOrFail();
@@ -147,6 +156,10 @@ class PaymentController extends Controller
      */
     public function uploadReceipt(Request $request, string $token): RedirectResponse
     {
+        if (!PaymentProviderService::isEnabled('nsave')) {
+            return back()->with('error', 'Bank transfer is temporarily unavailable. Please contact us.');
+        }
+
         $paymentLink = PaymentLink::where('payment_token', $token)
             ->with('invoice')
             ->firstOrFail();

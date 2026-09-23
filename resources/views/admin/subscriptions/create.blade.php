@@ -21,9 +21,9 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label required">Company</label>
+                            <label class="form-label required">Customer</label>
                             <select name="company_id" id="companySelect" class="form-select @error('company_id') is-invalid @enderror" required>
-                                <option value="">Select Company</option>
+                                <option value="">Select Customer</option>
                                 @foreach($companies as $company)
                                     <option value="{{ $company->id }}" {{ old('company_id', request('company_id')) == $company->id ? 'selected' : '' }}>
                                         {{ $company->name }}
@@ -40,8 +40,12 @@
                             <select name="agent_id" id="agentSelect" class="form-select @error('agent_id') is-invalid @enderror" required>
                                 <option value="">Select Assistant</option>
                                 @foreach($agents as $agent)
+                                    @php $deal = ($agent->deal && !$agent->deal->isClaimed()) ? $agent->deal : null; @endphp
                                     <option value="{{ $agent->id }}" data-company="{{ $agent->company_id }}" {{ old('agent_id', request('agent_id')) == $agent->id ? 'selected' : '' }}>
                                         {{ $agent->name }} {{ $agent->phone_number ? "({$agent->phone_number})" : '' }}
+                                        @if($deal)
+                                            — Deal: ${{ number_format($deal->agreed_monthly_price, 2) }}/mo{{ $deal->is_trial ? ", {$deal->trial_days}-day trial" : ', paid via Paddle' }}
+                                        @endif
                                     </option>
                                 @endforeach
                             </select>
@@ -49,6 +53,13 @@
                             @error('agent_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            @if($agents->contains(fn($a) => $a->deal && !$a->deal->isClaimed()))
+                                <div class="alert alert-info mt-2 mb-0 py-2 px-3 small">
+                                    Assistants marked "Deal:" were created from an unclaimed paid Paddle deal —
+                                    price and trial length will be taken from that deal automatically, overriding
+                                    whatever is set below, and no duplicate charge will be sent.
+                                </div>
+                            @endif
                         </div>
 
                         <div class="mb-3">

@@ -73,7 +73,7 @@
             <!-- Company Info -->
             @if(auth()->user()->company)
                 <div class="mt-auto p-3">
-                    <div class="small text-muted mb-1">Company</div>
+                    <div class="small text-muted mb-1">Customer</div>
                     <div class="text-white">{{ auth()->user()->company->name }}</div>
                 </div>
             @endif

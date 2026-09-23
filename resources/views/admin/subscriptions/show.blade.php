@@ -83,7 +83,7 @@
                             </div>
                         </div>
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Company</div>
+                            <div class="datagrid-title">Customer</div>
                             <div class="datagrid-content">
                                 @if($subscription->company)
                                     <a href="{{ route('admin.companies.show', $subscription->company) }}">
@@ -270,11 +270,12 @@
                 </div>
             </div>
 
-            <!-- Billing Cycles -->
+            <!-- Billing Cycles (internal profitability snapshot, taken each renewal) -->
             @if($subscription->billingCycles && $subscription->billingCycles->count() > 0)
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Billing Cycles</h3>
+                        <div class="card-subtitle">Retainer vs. Retell cost, snapshotted each time this subscription renews</div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-vcenter card-table">
@@ -282,10 +283,10 @@
                                 <tr>
                                     <th>Period</th>
                                     <th>Minutes Used</th>
-                                    <th>Base Amount</th>
-                                    <th>Overage</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
+                                    <th>Retainer</th>
+                                    <th>Retell Cost</th>
+                                    <th>Profit</th>
+                                    <th>Margin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -295,21 +296,15 @@
                                             {{ $cycle->period_start?->format('M d') }} - {{ $cycle->period_end?->format('M d, Y') }}
                                         </td>
                                         <td>{{ number_format($cycle->minutes_used ?? 0, 1) }} min</td>
-                                        <td class="text-money">${{ number_format($cycle->base_amount ?? 0, 2) }}</td>
-                                        <td class="text-money">
-                                            @if($cycle->overage_amount > 0)
-                                                <span class="text-warning">${{ number_format($cycle->overage_amount, 2) }}</span>
-                                            @else
-                                                $0.00
-                                            @endif
+                                        <td class="text-money">${{ number_format($cycle->subscription_amount ?? 0, 2) }}</td>
+                                        <td class="text-money">${{ number_format($cycle->retell_cost ?? 0, 2) }}</td>
+                                        <td class="text-money {{ ($cycle->profit ?? 0) >= 0 ? 'text-green' : 'text-red' }}">
+                                            ${{ number_format($cycle->profit ?? 0, 2) }}
                                         </td>
-                                        <td class="text-money"><strong>${{ number_format($cycle->total_amount ?? 0, 2) }}</strong></td>
                                         <td>
-                                            @if($cycle->is_finalized)
-                                                <span class="badge bg-green-lt">Finalized</span>
-                                            @else
-                                                <span class="badge bg-yellow-lt">In Progress</span>
-                                            @endif
+                                            <span class="badge {{ ($cycle->profit_margin ?? 0) >= 0 ? 'bg-green-lt' : 'bg-red-lt' }}">
+                                                {{ number_format($cycle->profit_margin ?? 0, 1) }}%
+                                            </span>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -318,6 +313,8 @@
                     </div>
                 </div>
             @endif
+
+            @include('admin.partials._activity_timeline', ['activity' => $activity])
 
             <!-- Actions Card -->
             @if($subscription->status === 'active')

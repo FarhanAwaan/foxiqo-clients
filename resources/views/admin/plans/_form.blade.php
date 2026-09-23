@@ -54,16 +54,16 @@
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label class="form-label">Overage Rate</label>
+                            <label class="form-label">Per-Minute Rate</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" name="overage_rate" step="0.0001" min="0"
-                                       class="form-control @error('overage_rate') is-invalid @enderror"
-                                       value="{{ old('overage_rate', $plan->overage_rate ?? '') }}" placeholder="0.0000">
+                                <input type="number" name="per_minute_rate" step="0.0001" min="0"
+                                       class="form-control @error('per_minute_rate') is-invalid @enderror"
+                                       value="{{ old('per_minute_rate', $plan->per_minute_rate ?? '') }}" placeholder="0.0000">
                                 <span class="input-group-text">/min</span>
                             </div>
-                            <small class="text-muted">Charged per minute over the included limit</small>
-                            @error('overage_rate')
+                            <small class="text-muted">Charged for every minute used, billed separately once each period closes</small>
+                            @error('per_minute_rate')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -87,13 +87,13 @@
                                    id="isCustomSwitch" {{ old('is_custom') ? 'checked' : '' }}>
                             <span class="form-check-label">Custom Plan</span>
                         </label>
-                        <small class="text-muted d-block">Custom plans are only available to a specific company</small>
+                        <small class="text-muted d-block">Custom plans are only available to a specific customer</small>
                     </div>
 
                     <div class="mb-3" id="companySelect" style="{{ old('is_custom') ? '' : 'display: none;' }}">
-                        <label class="form-label required">Company</label>
+                        <label class="form-label required">Customer</label>
                         <select name="company_id" class="form-select @error('company_id') is-invalid @enderror">
-                            <option value="">Select Company</option>
+                            <option value="">Select Customer</option>
                             @foreach($companies as $company)
                                 <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
                                     {{ $company->name }}

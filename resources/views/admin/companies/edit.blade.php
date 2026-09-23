@@ -1,9 +1,9 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Company')
+@section('title', 'Edit Customer')
 
 @section('page-pretitle')
-    Companies
+    Customers
 @endsection
 
 @section('page-header')

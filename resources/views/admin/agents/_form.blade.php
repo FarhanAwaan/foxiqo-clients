@@ -21,15 +21,15 @@
                     </div>
 
                     <div class="col-md-6 mb-3">
-                        <label class="form-label required" for="company_id">Company</label>
+                        <label class="form-label required" for="company_id">Customer</label>
                         <select name="company_id"
                                 id="company_id"
                                 class="form-select @error('company_id') is-invalid @enderror"
                                 required>
-                            <option value="">Select a company...</option>
+                            <option value="">Select a customer...</option>
                             @foreach($companies as $company)
                                 <option value="{{ $company->id }}"
-                                    {{ old('company_id', $agent->company_id ?? '') == $company->id ? 'selected' : '' }}>
+                                    {{ old('company_id', $agent->company_id ?? $selectedCompanyId ?? '') == $company->id ? 'selected' : '' }}>
                                     {{ $company->name }}
                                 </option>
                             @endforeach
@@ -38,6 +38,16 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
+
+                    @if(!empty($deal))
+                        <div class="col-12 mb-3">
+                            <input type="hidden" name="deal_id" value="{{ old('deal_id', $deal->id) }}">
+                            <div class="alert alert-info mb-0 py-2 px-3 small">
+                                Linked to Deal "{{ $deal->business_name }}" — ${{ number_format($deal->agreed_monthly_price, 2) }}/mo{{ $deal->is_trial ? ", {$deal->trial_days}-day trial" : '' }}.
+                                These terms will be applied automatically when you create this assistant's subscription.
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="col-md-6 mb-3">
                         <label class="form-label required" for="retell_agent_id">Retell Agent ID</label>
@@ -169,12 +179,12 @@
                        name="missed_call_notification_email"
                        id="missed_call_notification_email"
                        class="form-control @error('missed_call_notification_email') is-invalid @enderror"
-                       placeholder="Leave blank to use the company's billing email"
+                       placeholder="Leave blank to use the customer's billing email"
                        value="{{ old('missed_call_notification_email', $agent->missed_call_notification_email ?? '') }}">
                 @error('missed_call_notification_email')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
-                <div class="form-hint">Optional &mdash; falls back to the company's billing email if left blank.</div>
+                <div class="form-hint">Optional &mdash; falls back to the customer's billing email if left blank.</div>
             </div>
         </div>
     </div>

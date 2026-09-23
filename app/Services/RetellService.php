@@ -226,11 +226,17 @@ class RetellService
         $minutes = (int) ceil($callLog->duration_minutes ?? 0);
         $subscription->increment('minutes_used', $minutes);
 
-        // Check circuit breaker
-        $threshold = SystemSetting::getValue('circuit_breaker_threshold', 150);
-        $limitMinutes = $subscription->plan->included_minutes * ($threshold / 100);
+        // Internal-only usage alert — billing is metered from minute 1 regardless
+        // (no included-minutes cap to enforce), so this never pauses anything. It
+        // just tells you when a customer's usage is trending toward a cost worth
+        // knowing about.
+        if (!SystemSetting::getValue('usage_alert_enabled', false)) {
+            return;
+        }
 
-        if ($subscription->minutes_used >= $limitMinutes && !$subscription->circuit_breaker_triggered) {
+        $thresholdMinutes = SystemSetting::getValue('usage_alert_minutes_threshold', 500);
+
+        if ($subscription->minutes_used >= $thresholdMinutes && !$subscription->circuit_breaker_triggered) {
             $subscription->update([
                 'circuit_breaker_triggered' => true,
                 'circuit_breaker_triggered_at' => now(),

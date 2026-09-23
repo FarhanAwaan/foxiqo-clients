@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
 
 use App\Traits\HasUuid;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasUuid;
+    use HasFactory, Notifiable, HasUuid, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -66,6 +69,85 @@ class User extends Authenticatable
     public function isCustomer(): bool
     {
         return $this->role === 'customer';
+    }
+
+    public function isCloser(): bool
+    {
+        return $this->role === 'closer';
+    }
+
+    /**
+     * Companies an admin has explicitly granted this user (closer/manager) visibility
+     * into. Admin and customer users don't use this — admin already sees everything,
+     * customer is already scoped to their own company_id.
+     */
+    public function accessibleCompanies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class, 'company_user_access');
+    }
+
+    /**
+     * Optional per-agent narrowing within an accessible company — see
+     * agent_user_access migration for the "no rows = full access" default.
+     */
+    public function accessibleAgents(): BelongsToMany
+    {
+        return $this->belongsToMany(Agent::class, 'agent_user_access');
+    }
+
+    /**
+     * Whether this user (assumed non-admin) may view the given company at all.
+     */
+    public function canAccessCompany(Company $company): bool
+    {
+        return $this->isAdmin() || $this->accessibleCompanies()->where('companies.id', $company->id)->exists();
+    }
+
+    /**
+     * Whether this user (assumed non-admin) may view the given agent — true if they
+     * can see its company AND (they have no agent-level restriction for that company,
+     * or this specific agent is one of the ones they're restricted to).
+     */
+    public function canAccessAgent(Agent $agent): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (!$this->canAccessCompany($agent->company)) {
+            return false;
+        }
+
+        $restrictedAgentIds = $this->accessibleAgents()
+            ->where('agents.company_id', $agent->company_id)
+            ->pluck('agents.id');
+
+        return $restrictedAgentIds->isEmpty() || $restrictedAgentIds->contains($agent->id);
+    }
+
+    /**
+     * Agents visible to this user within a company they can already access —
+     * every agent if unrestricted, otherwise only the granted ones.
+     */
+    public function visibleAgentsIn(Company $company)
+    {
+        $restrictedAgentIds = $this->accessibleAgents()
+            ->where('agents.company_id', $company->id)
+            ->pluck('agents.id');
+
+        return $restrictedAgentIds->isEmpty()
+            ? $company->agents()->get()
+            : $company->agents()->whereIn('id', $restrictedAgentIds)->get();
+    }
+
+    /**
+     * The human-facing name for this user's role — admin-editable from
+     * Admin > Roles & Permissions (e.g. "Closer" renamed to "Manager").
+     * `role` itself never changes; only what it's displayed as does.
+     */
+    public function getRoleLabelAttribute(): string
+    {
+        return Role::where('name', $this->role)->value('label') ?: ucfirst($this->role);
     }
 
     public function getFullNameAttribute(): string

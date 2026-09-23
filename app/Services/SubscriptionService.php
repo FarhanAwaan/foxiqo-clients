@@ -19,8 +19,55 @@ class SubscriptionService
         protected EmailService $emailService
     ) {}
 
-    public function create(Agent $agent, Plan $plan, ?float $customPrice = null, bool $isTrial = false, int $trialDays = 30): Subscription
+    /**
+     * @param array{provider: string, transaction_id: ?string}|null $alreadyPaid Pass this
+     *   when the first period's payment was already collected outside this flow (e.g. a
+     *   Paddle transaction created from a closer's deal, before this Agent existed). Creates
+     *   the subscription active immediately and records the invoice as already paid instead
+     *   of generating a fresh unpaid one.
+     * @param ?string $paddleSubscriptionId Set when this subscription originated from a Paddle
+     *   deal (trial or already-paid) so the renewal webhook can reconcile future Paddle
+     *   charges against it — see PaddleWebhookController::handleSubscriptionRenewalPayment().
+     */
+    public function create(Agent $agent, Plan $plan, ?float $customPrice = null, bool $isTrial = false, int $trialDays = 30, ?array $alreadyPaid = null, ?string $paddleSubscriptionId = null): Subscription
     {
+        if ($alreadyPaid) {
+            $startDate = Carbon::today();
+            $endDate = $startDate->copy()->addDays(30);
+
+            $subscription = Subscription::create([
+                'agent_id'              => $agent->id,
+                'company_id'            => $agent->company_id,
+                'plan_id'               => $plan->id,
+                'status'                => 'active',
+                'custom_price'          => $customPrice,
+                'paddle_subscription_id' => $paddleSubscriptionId,
+                'current_period_start'  => $startDate,
+                'current_period_end'    => $endDate,
+                'minutes_used'          => 0,
+                'activated_at'          => now(),
+                'expires_at'            => $endDate->endOfDay(),
+            ]);
+
+            $this->auditService->log('subscription_created', $subscription);
+
+            $invoice = $this->invoiceService->createForSubscription($subscription);
+
+            if (!empty($alreadyPaid['transaction_id'])) {
+                $invoice->update(['paddle_transaction_id' => $alreadyPaid['transaction_id']]);
+            }
+
+            $this->invoiceService->markAsPaid(
+                $invoice,
+                $alreadyPaid['provider'] ?? 'paddle',
+                $alreadyPaid['transaction_id'] ?? null
+            );
+
+            $this->emailService->sendSubscriptionActivated($subscription, $invoice);
+
+            return $subscription;
+        }
+
         if ($isTrial) {
             $startDate = Carbon::today();
             $trialEndsAt = $startDate->copy()->addDays($trialDays);
@@ -31,6 +78,7 @@ class SubscriptionService
                 'plan_id'               => $plan->id,
                 'status'                => 'active',
                 'custom_price'          => $customPrice,
+                'paddle_subscription_id' => $paddleSubscriptionId,
                 'is_trial'              => true,
                 'trial_days'            => $trialDays,
                 'trial_ends_at'         => $trialEndsAt,
@@ -138,6 +186,12 @@ class SubscriptionService
 
         $this->createBillingCycleSnapshot($subscription);
 
+        // Capture the just-closed period before it's overwritten below — this is
+        // what the usage invoice bills for, in arrears, now that minutes are known.
+        $closedPeriodStart = $subscription->current_period_start;
+        $closedPeriodEnd = $subscription->current_period_end;
+        $closedMinutesUsed = $subscription->minutes_used;
+
         $startDate = Carbon::today();
         $endDate = $startDate->copy()->addDays(30);
 
@@ -155,6 +209,26 @@ class SubscriptionService
         $this->auditService->log('subscription_renewed', $subscription);
 
         $this->emailService->sendSubscriptionRenewal($subscription, $invoice);
+
+        $this->billUsageForClosedPeriod($subscription, $closedPeriodStart, $closedPeriodEnd, $closedMinutesUsed);
+    }
+
+    /**
+     * Bill the metered usage for a period that just closed, if this plan has a
+     * per-minute rate configured and any minutes were actually used. Skipped
+     * entirely for plans with no rate set, so flat-fee-only subscriptions are
+     * completely unaffected.
+     */
+    protected function billUsageForClosedPeriod(Subscription $subscription, $periodStart, $periodEnd, int $minutesUsed): void
+    {
+        $rate = (float) ($subscription->plan->per_minute_rate ?? 0);
+
+        if ($rate <= 0 || $minutesUsed <= 0) {
+            return;
+        }
+
+        $usageInvoice = $this->invoiceService->createUsageInvoice($subscription, $periodStart, $periodEnd, $minutesUsed);
+        $this->invoiceService->createPaymentLink($usageInvoice);
     }
 
     /**

@@ -52,7 +52,7 @@ class SystemSetting extends Model
         }
 
         if ($setting) {
-            $setting->update(['value' => $value]);
+            $setting->update(['value' => $value, 'type' => $type, 'is_sensitive' => $sensitive]);
         } else {
             static::create([
                 'key' => $key,

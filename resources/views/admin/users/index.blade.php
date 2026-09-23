@@ -11,10 +11,16 @@
 @endsection
 
 @section('page-actions')
-    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-        Add User
-    </a>
+    <div class="btn-list">
+        <a href="{{ route('admin.roles.index') }}" class="btn btn-outline-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 11m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h1.5" /><path d="M17 19h6" /><path d="M20 16l3 3l-3 3" /></svg>
+            Roles & Permissions
+        </a>
+        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+            Add User
+        </a>
+    </div>
 @endsection
 
 @section('content')
@@ -30,7 +36,7 @@
                         </button>
                     </div>
                     <select name="company_id" class="form-select form-select-sm" style="width: 160px;" onchange="this.form.submit()">
-                        <option value="">All Companies</option>
+                        <option value="">All Customers</option>
                         @foreach($companies as $company)
                             <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
                                 {{ $company->name }}
@@ -39,8 +45,9 @@
                     </select>
                     <select name="role" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">
                         <option value="">All Roles</option>
-                        <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
-                        <option value="customer" {{ request('role') == 'customer' ? 'selected' : '' }}>Customer</option>
+                        <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>{{ $roleLabels['admin'] ?? 'Admin' }}</option>
+                        <option value="closer" {{ request('role') == 'closer' ? 'selected' : '' }}>{{ $roleLabels['closer'] ?? 'Closer' }}</option>
+                        <option value="customer" {{ request('role') == 'customer' ? 'selected' : '' }}>{{ $roleLabels['customer'] ?? 'Customer' }}</option>
                     </select>
                     <select name="status" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">
                         <option value="">All Status</option>
@@ -59,7 +66,7 @@
                 <thead>
                     <tr>
                         <th>User</th>
-                        <th>Company</th>
+                        <th>Customer</th>
                         <th>Role</th>
                         <th>Status</th>
                         <th>Last Login</th>
@@ -71,7 +78,7 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <span class="avatar avatar-sm {{ $user->role === 'admin' ? 'bg-red-lt' : 'bg-primary-lt' }} me-2">
+                                    <span class="avatar avatar-sm {{ $user->role === 'admin' ? 'bg-red-lt' : ($user->role === 'closer' ? 'bg-orange-lt' : 'bg-primary-lt') }} me-2">
                                         {{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}
                                     </span>
                                     <div>
@@ -93,9 +100,11 @@
                             </td>
                             <td>
                                 @if($user->role === 'admin')
-                                    <span class="badge bg-red-lt">Admin</span>
+                                    <span class="badge bg-red-lt">{{ $user->role_label }}</span>
+                                @elseif($user->role === 'closer')
+                                    <span class="badge bg-orange-lt">{{ $user->role_label }}</span>
                                 @else
-                                    <span class="badge bg-blue-lt">Customer</span>
+                                    <span class="badge bg-blue-lt">{{ $user->role_label }}</span>
                                 @endif
                             </td>
                             <td>

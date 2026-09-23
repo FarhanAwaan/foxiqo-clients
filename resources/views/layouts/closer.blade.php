@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        (function () {
+            var theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
+    <title>@yield('title', 'Deals') - {{ config('app.name') }}</title>
+
+    {{-- Favicons --}}
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/logos/favicons/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/logos/favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ asset('images/logos/favicons/favicon-48x48.png') }}">
+    <link rel="icon" href="{{ asset('images/logos/favicons/favicon.ico') }}">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logos/favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logos/favicons/android-chrome-192x192.png') }}">
+    <link rel="manifest" href="{{ asset('images/logos/favicons/site.webmanifest') }}">
+    <meta name="msapplication-TileColor" content="#f26422">
+    <meta name="msapplication-TileImage" content="{{ asset('images/logos/favicons/android-chrome-192x192.png') }}">
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    @stack('styles')
+</head>
+<body class="layout-fluid">
+    <div class="page">
+        <!-- Sidebar -->
+        @include('components.sidebar.closer')
+
+        <div class="page-wrapper">
+            @include('components.page-loader')
+
+            <!-- Header -->
+            @include('components.header.closer')
+
+            <!-- Page Content -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <!-- Alerts -->
+                    @include('components.alerts.flash')
+
+                    <!-- Page Header -->
+                    @hasSection('page-header')
+                        <div class="page-header d-print-none mb-4">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    @hasSection('page-pretitle')
+                                        <div class="page-pretitle">@yield('page-pretitle')</div>
+                                    @endif
+                                    <h2 class="page-title">@yield('page-header')</h2>
+                                </div>
+                                @hasSection('page-actions')
+                                    <div class="col-auto ms-auto">
+                                        @yield('page-actions')
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Main Content -->
+                    @yield('content')
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item">
+                                    &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="{{ asset('js/custom.js') }}"></script>
+
+    @stack('scripts')
+</body>
+</html>

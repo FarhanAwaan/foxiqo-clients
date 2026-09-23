@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\CallLog;
 use App\Models\Company;
+use App\Models\Deal;
 use App\Services\AuditService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -48,17 +49,23 @@ class AgentController extends Controller
         return view('admin.agents.index', compact('agents', 'companies'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $companies = Company::where('status', 'active')->orderBy('name')->get();
 
-        return view('admin.agents.create', compact('companies'));
+        $selectedCompanyId = $request->integer('company_id') ?: null;
+        $deal = $request->filled('deal_id')
+            ? Deal::whereKey($request->input('deal_id'))->paid()->whereNull('subscription_id')->first()
+            : null;
+
+        return view('admin.agents.create', compact('companies', 'selectedCompanyId', 'deal'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'company_id' => ['required', 'exists:companies,id'],
+            'deal_id' => ['nullable', 'exists:deals,id'],
             'retell_agent_id' => ['required', 'string', 'max:100', 'unique:agents'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -110,7 +117,7 @@ class AgentController extends Controller
             'sentimentUrl' => route('admin.agents.charts.sentiment', $agent),
             'companyUrl' => route('admin.companies.show', $agent->company),
             'subscriptionUrl' => $agent->subscription ? route('admin.subscriptions.show', $agent->subscription) : null,
-            'createSubscriptionUrl' => route('admin.subscriptions.create') . '?agent_id=' . $agent->uuid,
+            'createSubscriptionUrl' => route('admin.subscriptions.create', ['agent_id' => $agent->id, 'company_id' => $agent->company_id]),
         ];
 
         return view('admin.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls', 'upcomingAppointments') + $viewData);

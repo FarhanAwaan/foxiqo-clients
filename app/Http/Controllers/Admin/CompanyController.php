@@ -65,7 +65,7 @@ class CompanyController extends Controller
         $this->auditService->log('company_created', $company);
 
         return redirect()->route('admin.companies.show', $company)
-            ->with('success', 'Company created successfully.');
+            ->with('success', 'Customer created successfully.');
     }
 
     public function show(Company $company): View
@@ -74,7 +74,18 @@ class CompanyController extends Controller
 
         $recentInvoices = $company->invoices()->latest()->take(5)->get();
 
-        return view('admin.companies.show', compact('company', 'recentInvoices'));
+        $activeSubscriptions = $company->agents->pluck('subscription')->filter(fn ($s) => $s?->status === 'active');
+        $billingSummary = [
+            'mrr' => $activeSubscriptions->sum(fn ($s) => $s->getEffectivePrice()),
+            'minutes_used' => $activeSubscriptions->sum('minutes_used'),
+            'usage_cost' => $activeSubscriptions->sum(
+                fn ($s) => $s->minutes_used * (float) ($s->plan->per_minute_rate ?? 0)
+            ),
+            'has_trial' => $activeSubscriptions->contains('is_trial', true),
+            'has_overdue' => $company->invoices()->overdue()->exists(),
+        ];
+
+        return view('admin.companies.show', compact('company', 'recentInvoices', 'billingSummary'));
     }
 
     public function edit(Company $company): View
@@ -114,7 +125,7 @@ class CompanyController extends Controller
         $this->auditService->log('company_updated', $company, $oldValues);
 
         return redirect()->route('admin.companies.show', $company)
-            ->with('success', 'Company updated successfully.');
+            ->with('success', 'Customer updated successfully.');
     }
 
     public function destroy(Company $company): RedirectResponse
@@ -124,7 +135,7 @@ class CompanyController extends Controller
         $company->delete();
 
         return redirect()->route('admin.companies.index')
-            ->with('success', 'Company deleted successfully.');
+            ->with('success', 'Customer deleted successfully.');
     }
 
     public function regenerateWebhook(Company $company): RedirectResponse

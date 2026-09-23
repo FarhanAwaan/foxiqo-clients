@@ -1,4 +1,8 @@
-@extends(auth()->user()->isAdmin() ? 'layouts.admin' : 'layouts.customer')
+@extends(match(true) {
+    auth()->user()->isAdmin() => 'layouts.admin',
+    auth()->user()->isCloser() => 'layouts.closer',
+    default => 'layouts.customer',
+})
 
 @section('title', 'My Profile')
 
@@ -17,7 +21,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <div class="mb-3">
-                        <span class="avatar avatar-xl {{ $user->role === 'admin' ? 'bg-red-lt' : 'bg-primary-lt' }}">
+                        <span class="avatar avatar-xl {{ $user->role === 'admin' ? 'bg-red-lt' : ($user->role === 'closer' ? 'bg-orange-lt' : 'bg-primary-lt') }}">
                             {{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}
                         </span>
                     </div>
@@ -25,9 +29,11 @@
                     <p class="text-muted">{{ $user->email }}</p>
                     <div class="mb-3">
                         @if($user->role === 'admin')
-                            <span class="badge bg-red-lt">Administrator</span>
+                            <span class="badge bg-red-lt">{{ $user->role_label }}</span>
+                        @elseif($user->role === 'closer')
+                            <span class="badge bg-orange-lt">{{ $user->role_label }}</span>
                         @else
-                            <span class="badge bg-blue-lt">Customer</span>
+                            <span class="badge bg-blue-lt">{{ $user->role_label }}</span>
                         @endif
                     </div>
                 </div>
@@ -41,7 +47,7 @@
                         @endif
                         @if($user->company)
                             <div class="datagrid-item">
-                                <div class="datagrid-title">Company</div>
+                                <div class="datagrid-title">Customer</div>
                                 <div class="datagrid-content">{{ $user->company->name }}</div>
                             </div>
                         @endif

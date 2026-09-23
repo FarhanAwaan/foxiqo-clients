@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Exceptions\SubscriptionHasPaidInvoiceException;
 use App\Models\Agent;
+use App\Models\AuditLog;
 use App\Models\Company;
+use App\Models\Deal;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\SubscriptionService;
@@ -43,7 +45,7 @@ class SubscriptionController extends Controller
         $plans = Plan::active()->orderBy('name')->get();
 
         // Get agents without subscriptions
-        $agents = Agent::with('company')
+        $agents = Agent::with(['company', 'deal'])
             ->whereDoesntHave('subscription')
             ->where('status', 'active')
             ->orderBy('name')
@@ -66,18 +68,53 @@ class SubscriptionController extends Controller
         $plan = Plan::findOrFail($validated['plan_id']);
         $isTrial = !empty($validated['is_trial']);
         $trialDays = (int) ($validated['trial_days'] ?? 30);
+        $customPrice = $validated['custom_price'] ?? null;
+        $alreadyPaid = null;
+        $paddleSubscriptionId = null;
+
+        // A Paddle deal already committed to specific terms for this customer — the
+        // portal's invoicing MUST match what Paddle actually charges, so this
+        // overrides whatever was submitted rather than trusting it. Matched via the
+        // Agent's own deal_id (set when it was created from a Deal's "Add Assistant"
+        // link), not by company alone — a company can have more than one unclaimed
+        // deal at once, which company-wide matching can't disambiguate.
+        $deal = $agent->deal && !$agent->deal->isClaimed() ? $agent->deal : null;
+
+        if ($deal) {
+            $customPrice = (float) $deal->agreed_monthly_price;
+            $isTrial = $deal->is_trial;
+            $trialDays = $deal->trial_days ?? 30;
+            $paddleSubscriptionId = $deal->paddle_subscription_id;
+
+            // Non-trial: Paddle already collected the first month + activation at
+            // checkout. Trial: only activation was collected — Paddle's own trial
+            // clock (not this app's) governs when the first real charge happens,
+            // reconciled later by the renewal webhook, so no invoice is created now.
+            if (!$isTrial) {
+                $alreadyPaid = ['provider' => 'paddle', 'transaction_id' => $deal->paddle_transaction_id];
+            }
+        }
 
         $subscription = $this->subscriptionService->create(
             $agent,
             $plan,
-            $validated['custom_price'] ?? null,
+            $customPrice,
             $isTrial,
-            $trialDays
+            $trialDays,
+            $alreadyPaid,
+            $paddleSubscriptionId
         );
 
-        $message = $isTrial
-            ? "Free trial started. The assistant is now active for {$trialDays} days. A trial welcome email has been sent."
-            : 'Subscription created. Invoice and payment link have been sent to the customer.';
+        if ($deal) {
+            $deal->update(['subscription_id' => $subscription->id]);
+        }
+
+        $message = match (true) {
+            $deal && $isTrial => "Subscription created from Deal \"{$deal->business_name}\" — {$trialDays}-day Paddle trial, \${$customPrice}/mo after. Activation was already collected; the monthly charge and this subscription's invoice will reconcile automatically when Paddle bills it.",
+            $deal => "Subscription created from Deal \"{$deal->business_name}\" — \${$customPrice}/mo, already paid via Paddle. No further action needed for this period.",
+            $isTrial => "Free trial started. The assistant is now active for {$trialDays} days. A trial welcome email has been sent.",
+            default => 'Subscription created. Invoice and payment link have been sent to the customer.',
+        };
 
         return redirect()->route('admin.subscriptions.show', $subscription)
             ->with('success', $message);
@@ -95,7 +132,13 @@ class SubscriptionController extends Controller
         $subscription->setRelation('invoices', $invoices);
         $subscription->setRelation('billingCycles', $billingCycles);
 
-        return view('admin.subscriptions.show', compact('subscription'));
+        $activity = AuditLog::where('entity_type', Subscription::class)
+            ->where('entity_id', $subscription->id)
+            ->with('user')
+            ->latest()
+            ->get();
+
+        return view('admin.subscriptions.show', compact('subscription', 'activity'));
     }
 
     public function edit(Subscription $subscription): View

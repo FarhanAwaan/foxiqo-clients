@@ -34,7 +34,7 @@
                         </div>
                         <div class="col-6">
                             <div class="mb-0">
-                                <div class="text-muted small">Company</div>
+                                <div class="text-muted small">Customer</div>
                                 <div class="fw-bold">{{ $invoice->company->name }}</div>
                             </div>
                         </div>

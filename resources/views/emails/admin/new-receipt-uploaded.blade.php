@@ -15,7 +15,7 @@
             <td style="padding:20px;">
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="padding:4px 0; color:#1a4b8c; font-size:13px;">Company</td>
+                        <td style="padding:4px 0; color:#1a4b8c; font-size:13px;">Customer</td>
                         <td style="padding:4px 0; color:#1a4b8c; font-weight:600; text-align:right;">{{ $company->name }}</td>
                     </tr>
                     <tr>

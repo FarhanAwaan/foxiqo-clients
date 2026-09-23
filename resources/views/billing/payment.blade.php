@@ -25,7 +25,7 @@
                 <h3 class="card-title">Invoice Details</h3>
                 <div class="datagrid">
                     <div class="datagrid-item">
-                        <div class="datagrid-title">Company</div>
+                        <div class="datagrid-title">Customer</div>
                         <div class="datagrid-content">{{ $invoice->company->name }}</div>
                     </div>
                     <div class="datagrid-item">

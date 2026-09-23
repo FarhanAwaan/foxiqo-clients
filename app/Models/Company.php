@@ -16,7 +16,7 @@ class Company extends Model
         'uuid', 'name', 'email', 'billing_email', 'phone',
         'address', 'city', 'state', 'postal_code', 'country',
         'status', 'webhook_signature', 'notes',
-        'logo_path', 'brand_color',
+        'logo_path', 'brand_color', 'paddle_customer_id',
     ];
 
     protected static function booted(): void

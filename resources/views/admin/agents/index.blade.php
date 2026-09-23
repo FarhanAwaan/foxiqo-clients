@@ -28,9 +28,9 @@
                         <input type="text" name="search" class="form-control" placeholder="Name, phone, agent ID..." value="{{ request('search') }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Company</label>
+                        <label class="form-label">Customer</label>
                         <select name="company_id" class="form-select">
-                            <option value="">All Companies</option>
+                            <option value="">All Customers</option>
                             @foreach($companies as $company)
                                 <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
                                     {{ $company->name }}

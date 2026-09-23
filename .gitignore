@@ -31,7 +31,6 @@ Homestead.json
 auth.json
 
 package-lock.json
-composer.lock
 .htaccess
 /public/.htaccess
 /*.md

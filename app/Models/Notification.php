@@ -13,7 +13,7 @@ class Notification extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'uuid', 'company_id', 'user_id', 'type', 'channel',
+        'uuid', 'company_id', 'user_id', 'type', 'channel', 'status', 'error',
         'subject', 'body', 'data', 'sent_at', 'read_at',
     ];
 
@@ -32,5 +32,10 @@ class Notification extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getRecipientEmailAttribute(): ?string
+    {
+        return $this->data['recipient_email'] ?? null;
     }
 }

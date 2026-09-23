@@ -12,9 +12,9 @@ class Invoice extends Model
     use HasUuid;
 
     protected $fillable = [
-        'uuid', 'invoice_number', 'subscription_id', 'company_id',
-        'amount', 'status', 'billing_period_start', 'billing_period_end',
-        'due_date', 'sent_at', 'paid_at', 'notes',
+        'uuid', 'invoice_number', 'subscription_id', 'company_id', 'invoice_type',
+        'amount', 'usage_minutes', 'status', 'billing_period_start', 'billing_period_end',
+        'due_date', 'sent_at', 'paid_at', 'notes', 'paddle_transaction_id', 'paddle_status',
     ];
 
     protected $casts = [
@@ -25,6 +25,30 @@ class Invoice extends Model
         'sent_at' => 'datetime',
         'paid_at' => 'datetime',
     ];
+
+    public function isUsageInvoice(): bool
+    {
+        return $this->invoice_type === 'usage';
+    }
+
+    public function isActivationInvoice(): bool
+    {
+        return $this->invoice_type === 'activation';
+    }
+
+    public function wentThroughPaddle(): bool
+    {
+        return $this->paddle_transaction_id !== null;
+    }
+
+    public function getTypeLabelAttribute(): string
+    {
+        return match ($this->invoice_type) {
+            'usage' => 'Usage',
+            'activation' => 'Activation',
+            default => 'Retainer',
+        };
+    }
 
     public function subscription(): BelongsTo
     {

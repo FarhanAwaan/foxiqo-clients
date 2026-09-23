@@ -31,8 +31,6 @@
 </head>
 <body class="d-flex flex-column bg-white">
     <div class="page page-center">
-        @include('components.page-loader')
-
         <div class="container container-tight py-4">
             <!-- Logo -->
             <div class="text-center mb-4">

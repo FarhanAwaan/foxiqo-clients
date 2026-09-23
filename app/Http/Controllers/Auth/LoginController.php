@@ -44,6 +44,10 @@ class LoginController extends Controller
                 return redirect()->intended(route('admin.dashboard'));
             }
 
+            if ($user->isCloser()) {
+                return redirect()->intended(route('deals.index'));
+            }
+
             return redirect()->intended(route('customer.dashboard'));
         }
 

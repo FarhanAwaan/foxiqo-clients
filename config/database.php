@@ -62,6 +62,32 @@ return [
             ]) : [],
         ],
 
+        // Production, read-only. Only ever open with DB::connection('mysql_live') —
+        // never made the default connection. LIVE_DB_ENABLED gates it: false (the
+        // resting state) leaves this connection undefined, so any attempt to use it
+        // fails fast with "Database connection [mysql_live] not configured" instead of
+        // silently reaching prod. The SET SESSION TRANSACTION READ ONLY init command
+        // makes MySQL itself reject any write on this connection, independent of the
+        // read-only DB user's own grants.
+        'mysql_live' => !env('LIVE_DB_ENABLED', false) ? null : [
+            'driver' => 'mysql',
+            'host' => env('LIVE_DB_HOST', '127.0.0.1'),
+            'port' => env('LIVE_DB_PORT', '3306'),
+            'database' => env('LIVE_DB_DATABASE', ''),
+            'username' => env('LIVE_DB_USERNAME', ''),
+            'password' => env('LIVE_DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? [
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET SESSION TRANSACTION READ ONLY',
+            ] : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

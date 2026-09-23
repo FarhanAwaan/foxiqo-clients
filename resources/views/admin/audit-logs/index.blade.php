@@ -91,9 +91,9 @@
             <form action="{{ route('admin.audit-logs.index') }}" method="GET">
                 <div class="row g-3">
                     <div class="col-md-3">
-                        <label class="form-label">Company</label>
+                        <label class="form-label">Customer</label>
                         <select name="company_id" class="form-select">
-                            <option value="">All Companies</option>
+                            <option value="">All Customers</option>
                             @foreach($companies as $company)
                                 <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
                                     {{ $company->name }}
@@ -194,7 +194,7 @@
                 <div class="card bg-primary-lt">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="subheader">Viewing Company</div>
+                            <div class="subheader">Viewing Customer</div>
                         </div>
                         <div class="h3 mb-0">{{ $selectedCompany?->name ?? 'Unknown' }}</div>
                     </div>

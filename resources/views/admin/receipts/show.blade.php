@@ -3,7 +3,7 @@
 @section('title', 'Review Receipt')
 
 @section('page-pretitle')
-    Payment Receipts
+    Transfer Receipts
 @endsection
 
 @section('page-header')
@@ -160,7 +160,7 @@
                             </div>
                         </div>
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Company</div>
+                            <div class="datagrid-title">Customer</div>
                             <div class="datagrid-content">
                                 @if($receipt->invoice->company)
                                     <a href="{{ route('admin.companies.show', $receipt->invoice->company) }}">
@@ -212,7 +212,7 @@
                     @if($receipt->invoice->company)
                         <a href="{{ route('admin.companies.show', $receipt->invoice->company) }}" class="list-group-item list-group-item-action d-flex align-items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0" /><path d="M9 8l1 0" /><path d="M9 12l1 0" /><path d="M9 16l1 0" /><path d="M14 8l1 0" /><path d="M14 12l1 0" /><path d="M14 16l1 0" /><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16" /></svg>
-                            View Company
+                            View Customer
                         </a>
                     @endif
                     <a href="{{ route('admin.receipts.index') }}" class="list-group-item list-group-item-action d-flex align-items-center">

@@ -55,7 +55,11 @@ class SignupController extends Controller
 
         app(EmailService::class)->sendWelcomeEmail($user);
 
-        $redirectRoute = $user->isAdmin() ? 'admin.dashboard' : 'customer.dashboard';
+        $redirectRoute = match (true) {
+            $user->isAdmin() => 'admin.dashboard',
+            $user->isCloser() => 'deals.index',
+            default => 'customer.dashboard',
+        };
 
         return redirect()->route($redirectRoute)
             ->with('success', 'Welcome! Your account has been activated.');

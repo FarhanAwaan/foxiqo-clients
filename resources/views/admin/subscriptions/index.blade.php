@@ -73,7 +73,7 @@
             <div class="card-actions">
                 <form action="{{ route('admin.subscriptions.index') }}" method="GET" class="d-flex gap-2 flex-wrap">
                     <select name="company_id" class="form-select form-select-sm" style="width: 180px;" onchange="this.form.submit()">
-                        <option value="">All Companies</option>
+                        <option value="">All Customers</option>
                         @foreach($companies as $company)
                             <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
                                 {{ $company->name }}
@@ -98,7 +98,7 @@
                 <thead>
                     <tr>
                         <th>Assistant</th>
-                        <th>Company</th>
+                        <th>Customer</th>
                         <th>Plan</th>
                         <th>Price</th>
                         <th>Usage</th>

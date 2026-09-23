@@ -74,12 +74,12 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label required" for="company_id">Company</label>
+                        <label class="form-label required" for="company_id">Customer</label>
                         <select name="company_id"
                                 id="company_id"
                                 class="form-select @error('company_id') is-invalid @enderror"
-                                {{ isset($user) && $user->role === 'admin' ? '' : 'required' }}>
-                            <option value="">Select a company...</option>
+                                {{ isset($user) && $user->role !== 'customer' ? '' : 'required' }}>
+                            <option value="">Select a customer...</option>
                             @foreach($companies as $company)
                                 <option value="{{ $company->id }}"
                                     {{ old('company_id', $user->company_id ?? $selectedCompanyId ?? '') == $company->id ? 'selected' : '' }}>
@@ -90,7 +90,7 @@
                         @error('company_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        <div class="form-hint">Admin users may not require a company</div>
+                        <div class="form-hint">Required for the Customer role only — admins and closers are internal staff and don't belong to a customer account</div>
                     </div>
 
                     <div class="col-md-6 mb-3">
@@ -100,10 +100,13 @@
                                 class="form-select @error('role') is-invalid @enderror"
                                 required>
                             <option value="customer" {{ old('role', $user->role ?? 'customer') == 'customer' ? 'selected' : '' }}>
-                                Customer
+                                {{ $roleLabels['customer'] ?? 'Customer' }}
+                            </option>
+                            <option value="closer" {{ old('role', $user->role ?? '') == 'closer' ? 'selected' : '' }}>
+                                {{ $roleLabels['closer'] ?? 'Closer' }}
                             </option>
                             <option value="admin" {{ old('role', $user->role ?? '') == 'admin' ? 'selected' : '' }}>
-                                Administrator
+                                {{ $roleLabels['admin'] ?? 'Administrator' }}
                             </option>
                         </select>
                         @error('role')
@@ -203,3 +206,19 @@
         @endif
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var roleSelect = document.getElementById('role');
+    var companySelect = document.getElementById('company_id');
+
+    function syncCompanyRequired() {
+        companySelect.required = roleSelect.value === 'customer';
+    }
+
+    roleSelect.addEventListener('change', syncCompanyRequired);
+    syncCompanyRequired();
+});
+</script>
+@endpush

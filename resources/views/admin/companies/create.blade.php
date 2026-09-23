@@ -1,13 +1,13 @@
 @extends('layouts.admin')
 
-@section('title', 'Create Company')
+@section('title', 'Create Customer')
 
 @section('page-pretitle')
-    Companies
+    Customers
 @endsection
 
 @section('page-header')
-    Create New Company
+    Create New Customer
 @endsection
 
 @section('content')

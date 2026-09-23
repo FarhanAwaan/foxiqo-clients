@@ -66,10 +66,10 @@
                             <div class="datagrid-content">{{ number_format($plan->included_minutes) }} min</div>
                         </div>
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Overage Rate</div>
+                            <div class="datagrid-title">Per-Minute Rate</div>
                             <div class="datagrid-content">
-                                @if($plan->overage_rate)
-                                    ${{ number_format($plan->overage_rate, 4) }}/min
+                                @if($plan->per_minute_rate)
+                                    ${{ number_format($plan->per_minute_rate, 4) }}/min
                                 @else
                                     <span class="text-muted">Not set</span>
                                 @endif
@@ -77,7 +77,7 @@
                         </div>
                         @if($plan->is_custom && $plan->company)
                             <div class="datagrid-item">
-                                <div class="datagrid-title">Company</div>
+                                <div class="datagrid-title">Customer</div>
                                 <div class="datagrid-content">
                                     <a href="{{ route('admin.companies.show', $plan->company) }}">
                                         {{ $plan->company->name }}
@@ -138,7 +138,7 @@
                         <thead>
                             <tr>
                                 <th>Agent</th>
-                                <th>Company</th>
+                                <th>Customer</th>
                                 <th>Price</th>
                                 <th>Usage</th>
                                 <th>Status</th>

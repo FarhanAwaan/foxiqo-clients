@@ -10,12 +10,12 @@ class Plan extends Model
 {
     protected $fillable = [
         'name', 'description', 'price', 'included_minutes',
-        'overage_rate', 'is_custom', 'company_id', 'is_active',
+        'per_minute_rate', 'is_custom', 'company_id', 'is_active',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'overage_rate' => 'decimal:4',
+        'per_minute_rate' => 'decimal:4',
         'is_custom' => 'boolean',
         'is_active' => 'boolean',
     ];

@@ -43,6 +43,69 @@ class InvoiceService
     }
 
     /**
+     * Bill the metered usage for a period that just closed — a separate invoice
+     * from the subscription's flat retainer, since the retainer keeps going through
+     * whatever rail already collects it (Paddle's recurring charge, or the usual
+     * Nsave/manual flow) and a variable usage amount can't ride along with that.
+     * Billed in arrears because minutes aren't known until the period is over.
+     */
+    public function createUsageInvoice(Subscription $subscription, Carbon $periodStart, Carbon $periodEnd, int $minutes): Invoice
+    {
+        $rate = (float) ($subscription->plan->per_minute_rate ?? 0);
+        $dueDays = SystemSetting::getValue('invoice_due_days', 7);
+
+        $invoice = Invoice::create([
+            'invoice_number' => $this->generateInvoiceNumber(),
+            'subscription_id' => $subscription->id,
+            'company_id' => $subscription->company_id,
+            'invoice_type' => 'usage',
+            'amount' => round($minutes * $rate, 2),
+            'usage_minutes' => $minutes,
+            'status' => 'draft',
+            'billing_period_start' => $periodStart,
+            'billing_period_end' => $periodEnd,
+            'due_date' => Carbon::today()->addDays($dueDays),
+        ]);
+
+        $this->auditService->log('usage_invoice_created', $invoice);
+
+        return $invoice;
+    }
+
+    /**
+     * Record a one-off Paddle charge that isn't tied to a subscription period —
+     * currently just the deal's one-time activation fee, created the moment
+     * Paddle confirms the transaction (before any Agent/Subscription exists to
+     * attach a normal invoice to). A point-in-time charge, so billing_period is
+     * just today rather than a real range.
+     */
+    public function createStandaloneInvoice(
+        int $companyId,
+        string $invoiceType,
+        float $amount,
+        string $paddleTransactionId,
+        ?string $paddleStatus = null
+    ): Invoice {
+        $invoice = Invoice::create([
+            'invoice_number' => $this->generateInvoiceNumber(),
+            'subscription_id' => null,
+            'company_id' => $companyId,
+            'invoice_type' => $invoiceType,
+            'amount' => $amount,
+            'status' => 'draft',
+            'billing_period_start' => Carbon::today(),
+            'billing_period_end' => Carbon::today(),
+            'due_date' => Carbon::today(),
+            'paddle_transaction_id' => $paddleTransactionId,
+            'paddle_status' => $paddleStatus,
+        ]);
+
+        $this->auditService->log('invoice_created', $invoice);
+
+        return $invoice;
+    }
+
+    /**
      * Create a payment link for an invoice (self-hosted).
      */
     public function createPaymentLink(Invoice $invoice, bool $manual = false, bool $sendEmail = true): PaymentLink

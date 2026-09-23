@@ -2,17 +2,17 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Company Information</h3>
+                <h3 class="card-title">Customer Information</h3>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12 mb-3">
-                        <label class="form-label required" for="name">Company Name</label>
+                        <label class="form-label required" for="name">Customer Name</label>
                         <input type="text"
                                name="name"
                                id="name"
                                class="form-control @error('name') is-invalid @enderror"
-                               placeholder="Enter company name"
+                               placeholder="Enter customer name"
                                value="{{ old('name', $company->name ?? '') }}"
                                required>
                         @error('name')
@@ -158,7 +158,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Branding</h3>
-                    <div class="card-subtitle">Shown to this company's users in their customer portal</div>
+                    <div class="card-subtitle">Shown to this customer's users in their customer portal</div>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -205,7 +205,7 @@
                               id="notes"
                               rows="6"
                               class="form-control @error('notes') is-invalid @enderror"
-                              placeholder="Internal notes about this company...">{{ old('notes', $company->notes ?? '') }}</textarea>
+                              placeholder="Internal notes about this customer...">{{ old('notes', $company->notes ?? '') }}</textarea>
                     @error('notes')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -218,7 +218,7 @@
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary flex-fill">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" /><path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M14 4l0 4l-6 0l0 -4" /></svg>
-                        {{ isset($company) ? 'Update Company' : 'Create Company' }}
+                        {{ isset($company) ? 'Update Customer' : 'Create Customer' }}
                     </button>
                     <a href="{{ isset($company) ? route('admin.companies.show', $company) : route('admin.companies.index') }}" class="btn btn-outline-secondary">
                         Cancel

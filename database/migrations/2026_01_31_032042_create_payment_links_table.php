@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
-            $table->string('provider', 150); //'payoneer', 'stripe', 'manual', 'internal'
+            $table->string('provider', 150); //'nsave', 'bank_transfer', 'paddle', 'stripe', 'manual', 'internal'
             $table->string('provider_reference')->nullable();
             $table->string('payment_url', 500);
             $table->decimal('amount', 10, 2);

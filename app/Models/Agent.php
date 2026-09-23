@@ -13,7 +13,7 @@ class Agent extends Model
     use HasUuid;
 
     protected $fillable = [
-        'uuid', 'company_id', 'retell_agent_id', 'name',
+        'uuid', 'company_id', 'deal_id', 'retell_agent_id', 'name',
         'description', 'phone_number', 'agent_type', 'cost_per_minute', 'status',
         'missed_call_email_alerts_enabled', 'missed_call_notification_email',
     ];
@@ -26,6 +26,11 @@ class Agent extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function deal(): BelongsTo
+    {
+        return $this->belongsTo(Deal::class);
     }
 
     public function subscription(): HasOne

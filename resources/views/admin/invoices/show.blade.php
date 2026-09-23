@@ -145,12 +145,22 @@
                             <tr>
                                 <td>
                                     <p class="strong mb-1">
-                                        {{ $invoice->subscription?->plan?->name ?? 'Subscription' }} - {{ $invoice->subscription?->agent?->name ?? 'Agent' }}
+                                        @if($invoice->isActivationInvoice())
+                                            One-Time Activation Fee
+                                        @else
+                                            {{ $invoice->subscription?->plan?->name ?? 'Subscription' }} - {{ $invoice->subscription?->agent?->name ?? 'Agent' }}
+                                        @endif
                                     </p>
                                     <div class="text-muted">
-                                        Monthly subscription fee
-                                        @if($invoice->subscription?->plan)
-                                            ({{ number_format($invoice->subscription->plan->included_minutes) }} minutes included)
+                                        @if($invoice->isUsageInvoice())
+                                            Usage charge &mdash; {{ number_format($invoice->usage_minutes) }} min
+                                            @if($invoice->subscription?->plan?->per_minute_rate)
+                                                &times; ${{ number_format($invoice->subscription->plan->per_minute_rate, 4) }}/min
+                                            @endif
+                                        @elseif($invoice->isActivationInvoice())
+                                            Setup &amp; onboarding, billed once via Paddle
+                                        @else
+                                            Monthly retainer
                                         @endif
                                     </div>
                                 </td>
@@ -322,13 +332,18 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Payments</h3>
+                        @if($invoice->paddle_status)
+                            <div class="card-actions">
+                                <span class="text-muted small" title="Paddle's own live transaction status">Paddle status: <code>{{ $invoice->paddle_status }}</code></span>
+                            </div>
+                        @endif
                     </div>
                     <div class="table-responsive">
                         <table class="table table-vcenter card-table">
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Provider</th>
+                                    <th>Source</th>
                                     <th>Transaction ID</th>
                                     <th class="text-end">Amount</th>
                                     <th>Status</th>
@@ -339,13 +354,24 @@
                                     <tr>
                                         <td>{{ $payment->created_at->format('M d, Y h:i A') }}</td>
                                         <td>
-                                            <span class="badge {{ $payment->provider === 'stripe' ? 'bg-purple-lt' : ($payment->provider === 'payoneer' ? 'bg-blue-lt' : 'bg-secondary-lt') }}">
-                                                {{ ucfirst($payment->provider) }}
-                                            </span>
+                                            @php
+                                                $providerBadge = match($payment->provider) {
+                                                    'paddle' => 'bg-blue-lt',
+                                                    'stripe' => 'bg-purple-lt',
+                                                    'bank_transfer' => 'bg-green-lt',
+                                                    'manual' => 'bg-yellow-lt',
+                                                    default => 'bg-secondary-lt',
+                                                };
+                                                $providerLabel = match($payment->provider) {
+                                                    'bank_transfer' => 'Nsave (Bank Transfer)',
+                                                    default => ucfirst($payment->provider),
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $providerBadge }}">{{ $providerLabel }}</span>
                                         </td>
                                         <td>
-                                            @if($payment->transaction_id)
-                                                <code>{{ $payment->transaction_id }}</code>
+                                            @if($payment->provider_transaction_id)
+                                                <code>{{ $payment->provider_transaction_id }}</code>
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif
@@ -367,6 +393,8 @@
                     </div>
                 </div>
             @endif
+
+            @include('admin.partials._activity_timeline', ['activity' => $activity])
         </div>
 
         <div class="col-lg-4">
@@ -404,7 +432,7 @@
                             </div>
                         </div>
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Company</div>
+                            <div class="datagrid-title">Customer</div>
                             <div class="datagrid-content">
                                 @if($invoice->company)
                                     <a href="{{ route('admin.companies.show', $invoice->company) }}">
@@ -472,7 +500,7 @@
                     @if($invoice->company)
                         <a href="{{ route('admin.companies.show', $invoice->company) }}" class="list-group-item list-group-item-action d-flex align-items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0" /><path d="M9 8l1 0" /><path d="M9 12l1 0" /><path d="M9 16l1 0" /><path d="M14 8l1 0" /><path d="M14 12l1 0" /><path d="M14 16l1 0" /><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16" /></svg>
-                            View Company
+                            View Customer
                         </a>
                     @endif
                     @if($invoice->subscription)
@@ -485,6 +513,12 @@
                         <a href="{{ route('admin.agents.show', $invoice->subscription->agent) }}" class="list-group-item list-group-item-action d-flex align-items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4"></path><path d="M12 2v2"></path><path d="M9 12v9"></path><path d="M15 12v9"></path><path d="M5 16l4 -2"></path><path d="M15 14l4 2"></path><path d="M9 18h6"></path><path d="M10 8v.01"></path><path d="M14 8v.01"></path></svg>
                             View Agent
+                        </a>
+                    @endif
+                    @if($invoice->paddle_transaction_id)
+                        <a href="{{ route('admin.invoices.paddle-invoice', $invoice) }}" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M9 15l6 -6" /><path d="M11 9h4v4" /></svg>
+                            View Invoice in Paddle
                         </a>
                     @endif
                 </div>
@@ -510,11 +544,11 @@
                             <div class="mb-3">
                                 <label class="form-label required">Payment Provider</label>
                                 <select name="provider" class="form-select" required>
-                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="bank_transfer">Bank Transfer (Nsave)</option>
                                     <option value="manual">Manual Payment</option>
                                     <option value="internal">Internal (Payment Page)</option>
+                                    <option value="paddle">Paddle</option>
                                     <option value="stripe">Stripe</option>
-                                    <option value="payoneer">Payoneer</option>
                                 </select>
                             </div>
 

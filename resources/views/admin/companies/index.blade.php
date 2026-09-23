@@ -1,30 +1,30 @@
 @extends('layouts.admin')
 
-@section('title', 'Companies')
+@section('title', 'Customers')
 
 @section('page-pretitle')
     Management
 @endsection
 
 @section('page-header')
-    Companies
+    Customers
 @endsection
 
 @section('page-actions')
     <a href="{{ route('admin.companies.create') }}" class="btn btn-primary">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-        Add Company
+        Add Customer
     </a>
 @endsection
 
 @section('content')
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">All Companies</h3>
+            <h3 class="card-title">All Customers</h3>
             <div class="card-actions">
                 <form action="{{ route('admin.companies.index') }}" method="GET" class="d-flex gap-2">
                     <div class="input-group input-group-sm" style="width: 250px;">
-                        <input type="text" name="search" class="form-control" placeholder="Search companies..." value="{{ request('search') }}">
+                        <input type="text" name="search" class="form-control" placeholder="Search customers..." value="{{ request('search') }}">
                         <button type="submit" class="btn btn-icon btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
                         </button>
@@ -45,7 +45,7 @@
             <table class="table table-vcenter card-table table-hover">
                 <thead>
                     <tr>
-                        <th>Company</th>
+                        <th>Customer</th>
                         <th>Contact</th>
                         <th>Agents</th>
                         <th>Users</th>
@@ -131,11 +131,11 @@
                                     <div class="empty-state-icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0" /><path d="M9 8l1 0" /><path d="M9 12l1 0" /><path d="M9 16l1 0" /><path d="M14 8l1 0" /><path d="M14 12l1 0" /><path d="M14 16l1 0" /><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16" /></svg>
                                     </div>
-                                    <p class="empty-state-title">No companies found</p>
-                                    <p class="empty-state-description">Get started by adding your first company.</p>
+                                    <p class="empty-state-title">No customers found</p>
+                                    <p class="empty-state-description">Get started by adding your first customer.</p>
                                     <a href="{{ route('admin.companies.create') }}" class="btn btn-primary">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                                        Add Company
+                                        Add Customer
                                     </a>
                                 </div>
                             </td>

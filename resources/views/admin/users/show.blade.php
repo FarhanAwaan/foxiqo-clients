@@ -43,7 +43,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <div class="mb-3">
-                        <span class="avatar avatar-xl {{ $user->role === 'admin' ? 'bg-red-lt' : 'bg-primary-lt' }}">
+                        <span class="avatar avatar-xl {{ $user->role === 'admin' ? 'bg-red-lt' : ($user->role === 'closer' ? 'bg-orange-lt' : 'bg-primary-lt') }}">
                             {{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}
                         </span>
                     </div>
@@ -51,9 +51,11 @@
                     <p class="text-muted">{{ $user->email }}</p>
                     <div class="mb-3">
                         @if($user->role === 'admin')
-                            <span class="badge bg-red-lt">Administrator</span>
+                            <span class="badge bg-red-lt">{{ $user->role_label }}</span>
+                        @elseif($user->role === 'closer')
+                            <span class="badge bg-orange-lt">{{ $user->role_label }}</span>
                         @else
-                            <span class="badge bg-blue-lt">Customer</span>
+                            <span class="badge bg-blue-lt">{{ $user->role_label }}</span>
                         @endif
                         @switch($user->status)
                             @case('active')
@@ -77,14 +79,14 @@
                             </div>
                         @endif
                         <div class="datagrid-item">
-                            <div class="datagrid-title">Company</div>
+                            <div class="datagrid-title">Customer</div>
                             <div class="datagrid-content">
                                 @if($user->company)
                                     <a href="{{ route('admin.companies.show', $user->company) }}">
                                         {{ $user->company->name }}
                                     </a>
                                 @else
-                                    <span class="text-muted">No company</span>
+                                    <span class="text-muted">No customer</span>
                                 @endif
                             </div>
                         </div>
@@ -114,6 +116,100 @@
                 </div>
             </div>
 
+            <!-- Direct Permissions (in addition to whatever the role grants) -->
+            @if($user->role !== 'admin')
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Permissions</h3>
+                    </div>
+                    <form action="{{ route('admin.users.permissions.update', $user) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="card-body">
+                            @if($rolePermissions->isNotEmpty())
+                                <div class="mb-3">
+                                    <div class="text-muted small mb-1">Via {{ $user->role_label }} role (edit in Roles & Permissions)</div>
+                                    @foreach($rolePermissions as $name)
+                                        <span class="badge bg-blue-lt me-1 mb-1">{{ $name }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div class="text-muted small mb-1">Granted directly to this user</div>
+                            @forelse($permissions as $permission)
+                                @php $viaRole = $rolePermissions->contains($permission->name); @endphp
+                                {{-- Disabled checkboxes aren't submitted — a role-derived permission here
+                                     is display-only (already true via the role) and never gets written
+                                     into this user's own direct-permission set on save. --}}
+                                <label class="form-check form-switch {{ $viaRole ? 'opacity-50' : '' }}">
+                                    <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->name }}"
+                                        {{ $directPermissions->contains($permission->name) || $viaRole ? 'checked' : '' }}
+                                        {{ $viaRole ? 'disabled' : '' }}>
+                                    <span class="form-check-label">{{ $permission->name }}</span>
+                                </label>
+                            @empty
+                                <p class="text-muted mb-0">No permissions defined yet.</p>
+                            @endforelse
+                        </div>
+                        <div class="card-footer text-end">
+                            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            <!-- Customer & Assistant Access (closer/manager only) -->
+            @if($user->isCloser())
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Customer & Assistant Access</h3>
+                    </div>
+                    <form action="{{ route('admin.users.access.update', $user) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                {{ $user->role_label }} sees nothing here by default. Check a customer to grant
+                                visibility to it (read-only — no invoices, no cost data). Leave "assistants" unchecked
+                                to allow all of that customer's assistants, or check specific ones to limit it to
+                                just those — e.g. one demo assistant to show on a call.
+                            </p>
+
+                            @forelse($accessibleCompanies as $company)
+                                @php $companyChecked = $accessibleCompanyIds->contains($company->id); @endphp
+                                <div class="mb-2 border rounded p-2">
+                                    <label class="form-check mb-0">
+                                        <input class="form-check-input company-access-checkbox" type="checkbox"
+                                               name="companies[]" value="{{ $company->id }}"
+                                               {{ $companyChecked ? 'checked' : '' }}>
+                                        <span class="form-check-label">{{ $company->name }}</span>
+                                    </label>
+
+                                    @if($company->agents->isNotEmpty())
+                                        <details class="ms-4 mt-1" {{ $companyChecked ? 'open' : '' }}>
+                                            <summary class="text-muted small">Assistants ({{ $company->agents->count() }})</summary>
+                                            @foreach($company->agents as $agent)
+                                                <label class="form-check mb-0">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           name="agents[]" value="{{ $agent->id }}"
+                                                           {{ $accessibleAgentIds->contains($agent->id) ? 'checked' : '' }}>
+                                                    <span class="form-check-label">{{ $agent->name }}</span>
+                                                </label>
+                                            @endforeach
+                                        </details>
+                                    @endif
+                                </div>
+                            @empty
+                                <p class="text-muted mb-0">No active customers to grant access to yet.</p>
+                            @endforelse
+                        </div>
+                        <div class="card-footer text-end">
+                            <button type="submit" class="btn btn-primary btn-sm">Save Access</button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
             <!-- Invitation Token (for pending users) -->
             @if($user->status === 'pending' && $user->signup_token)
                 <div class="card bg-yellow-lt">
@@ -141,13 +237,13 @@
 
         <div class="col-lg-8">
             @if($user->company)
-                <!-- Company Agents -->
+                <!-- Customer's Agents -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Company Agents</h3>
+                        <h3 class="card-title">Customer's Agents</h3>
                         <div class="card-actions">
                             <a href="{{ route('admin.companies.show', $user->company) }}" class="btn btn-ghost-primary btn-md">
-                                View Company
+                                View Customer
                             </a>
                         </div>
                     </div>
@@ -219,10 +315,10 @@
                     </div>
                 </div>
 
-                <!-- Company Invoices -->
+                <!-- Customer's Invoices -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Company Invoices</h3>
+                        <h3 class="card-title">Customer's Invoices</h3>
                         <div class="card-actions">
                             <a href="{{ route('admin.invoices.index') }}?company={{ $user->company->uuid }}" class="btn btn-ghost-primary btn-md">
                                 View All
@@ -316,10 +412,10 @@
                             <div class="empty-state-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0" /><path d="M9 8l1 0" /><path d="M9 12l1 0" /><path d="M9 16l1 0" /><path d="M14 8l1 0" /><path d="M14 12l1 0" /><path d="M14 16l1 0" /><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16" /></svg>
                             </div>
-                            <p class="empty-state-title">No company assigned</p>
+                            <p class="empty-state-title">No customer assigned</p>
                             <p class="empty-state-description">
-                                This user is not associated with any company.<br>
-                                Assign a company to view billing and agent information.
+                                This user is not associated with any customer.<br>
+                                Assign a customer to view billing and agent information.
                             </p>
                             <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-primary">
                                 Edit User

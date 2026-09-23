@@ -41,7 +41,7 @@
                         <th>Plan</th>
                         <th>Price</th>
                         <th>Included Minutes</th>
-                        <th>Overage Rate</th>
+                        <th>Per-Minute Rate</th>
                         <th>Type</th>
                         <th>Status</th>
                         <th>Subscriptions</th>
@@ -66,8 +66,8 @@
                                 {{ number_format($plan->included_minutes) }} min
                             </td>
                             <td>
-                                @if($plan->overage_rate)
-                                    ${{ number_format($plan->overage_rate, 4) }}<span class="text-muted">/min</span>
+                                @if($plan->per_minute_rate)
+                                    ${{ number_format($plan->per_minute_rate, 4) }}<span class="text-muted">/min</span>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif

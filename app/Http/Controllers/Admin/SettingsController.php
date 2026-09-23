@@ -30,9 +30,16 @@ class SettingsController extends Controller
             'stripe_api_key' => SystemSetting::getValue('stripe_api_key', ''),
             'stripe_webhook_secret' => SystemSetting::getValue('stripe_webhook_secret', ''),
 
-            // Payoneer
-            'payoneer_api_key' => SystemSetting::getValue('payoneer_api_key', ''),
-            'payoneer_partner_id' => SystemSetting::getValue('payoneer_partner_id', ''),
+            // Payment rail toggles — flip off at any time if a rail is having issues
+            'nsave_enabled' => SystemSetting::getValue('nsave_enabled', true),
+            'paddle_enabled' => SystemSetting::getValue('paddle_enabled', false),
+
+            // Paddle
+            'paddle_environment' => SystemSetting::getValue('paddle_environment', 'sandbox'),
+            'paddle_api_key' => SystemSetting::getValue('paddle_api_key', ''),
+            'paddle_webhook_secret' => SystemSetting::getValue('paddle_webhook_secret', ''),
+            'paddle_client_side_token' => SystemSetting::getValue('paddle_client_side_token', ''),
+            'paddle_product_id' => SystemSetting::getValue('paddle_product_id', ''),
 
             // Google Calendar (agency-wide OAuth app, used for all agent connections)
             'google_calendar_client_id' => SystemSetting::getValue('google_calendar_client_id', ''),
@@ -41,7 +48,8 @@ class SettingsController extends Controller
             // Billing
             'invoice_due_days' => SystemSetting::getValue('invoice_due_days', 7),
             'payment_link_expiry_days' => SystemSetting::getValue('payment_link_expiry_days', 14),
-            'circuit_breaker_threshold' => SystemSetting::getValue('circuit_breaker_threshold', 150),
+            'usage_alert_enabled' => SystemSetting::getValue('usage_alert_enabled', false),
+            'usage_alert_minutes_threshold' => SystemSetting::getValue('usage_alert_minutes_threshold', 500),
         ];
 
         // Check which sensitive fields have values (for display purposes)
@@ -50,7 +58,9 @@ class SettingsController extends Controller
             'retell_webhook_secret' => !empty($settings['retell_webhook_secret']),
             'stripe_api_key' => !empty($settings['stripe_api_key']),
             'stripe_webhook_secret' => !empty($settings['stripe_webhook_secret']),
-            'payoneer_api_key' => !empty($settings['payoneer_api_key']),
+            'paddle_api_key' => !empty($settings['paddle_api_key']),
+            'paddle_webhook_secret' => !empty($settings['paddle_webhook_secret']),
+            'paddle_client_side_token' => !empty($settings['paddle_client_side_token']),
             'google_calendar_client_secret' => !empty($settings['google_calendar_client_secret']),
         ];
 
@@ -72,9 +82,16 @@ class SettingsController extends Controller
             'stripe_api_key' => ['nullable', 'string'],
             'stripe_webhook_secret' => ['nullable', 'string'],
 
-            // Payoneer (optional - only update if provided)
-            'payoneer_api_key' => ['nullable', 'string'],
-            'payoneer_partner_id' => ['nullable', 'string', 'max:100'],
+            // Payment rail toggles
+            'nsave_enabled' => ['nullable', 'boolean'],
+            'paddle_enabled' => ['nullable', 'boolean'],
+
+            // Paddle (optional - only update if provided)
+            'paddle_environment' => ['nullable', 'string', 'in:sandbox,live'],
+            'paddle_api_key' => ['nullable', 'string'],
+            'paddle_webhook_secret' => ['nullable', 'string'],
+            'paddle_client_side_token' => ['nullable', 'string'],
+            'paddle_product_id' => ['nullable', 'string', 'max:100'],
 
             // Google Calendar (optional - only update if provided)
             'google_calendar_client_id' => ['nullable', 'string'],
@@ -83,7 +100,8 @@ class SettingsController extends Controller
             // Billing
             'invoice_due_days' => ['required', 'integer', 'min:1', 'max:30'],
             'payment_link_expiry_days' => ['required', 'integer', 'min:1', 'max:60'],
-            'circuit_breaker_threshold' => ['required', 'integer', 'min:100', 'max:300'],
+            'usage_alert_enabled' => ['nullable', 'boolean'],
+            'usage_alert_minutes_threshold' => ['required', 'integer', 'min:1'],
         ]);
 
         // Save Company/Branding settings
@@ -106,12 +124,25 @@ class SettingsController extends Controller
             SystemSetting::setValue('stripe_webhook_secret', $validated['stripe_webhook_secret'], 'encrypted', true);
         }
 
-        // Save Payoneer settings (only if provided)
-        if ($request->filled('payoneer_api_key')) {
-            SystemSetting::setValue('payoneer_api_key', $validated['payoneer_api_key'], 'encrypted', true);
+        // Save payment rail toggles (checkboxes: absent means off)
+        SystemSetting::setValue('nsave_enabled', $request->boolean('nsave_enabled'), 'boolean');
+        SystemSetting::setValue('paddle_enabled', $request->boolean('paddle_enabled'), 'boolean');
+
+        // Save Paddle settings (only if provided)
+        if ($request->filled('paddle_environment')) {
+            SystemSetting::setValue('paddle_environment', $validated['paddle_environment'], 'string');
         }
-        if ($request->filled('payoneer_partner_id')) {
-            SystemSetting::setValue('payoneer_partner_id', $validated['payoneer_partner_id'], 'string');
+        if ($request->filled('paddle_api_key')) {
+            SystemSetting::setValue('paddle_api_key', $validated['paddle_api_key'], 'encrypted', true);
+        }
+        if ($request->filled('paddle_webhook_secret')) {
+            SystemSetting::setValue('paddle_webhook_secret', $validated['paddle_webhook_secret'], 'encrypted', true);
+        }
+        if ($request->filled('paddle_client_side_token')) {
+            SystemSetting::setValue('paddle_client_side_token', $validated['paddle_client_side_token'], 'encrypted', true);
+        }
+        if ($request->filled('paddle_product_id')) {
+            SystemSetting::setValue('paddle_product_id', $validated['paddle_product_id'], 'encrypted', true);
         }
 
         // Save Google Calendar settings (only if provided)
@@ -125,7 +156,8 @@ class SettingsController extends Controller
         // Save Billing settings
         SystemSetting::setValue('invoice_due_days', $validated['invoice_due_days'], 'integer');
         SystemSetting::setValue('payment_link_expiry_days', $validated['payment_link_expiry_days'], 'integer');
-        SystemSetting::setValue('circuit_breaker_threshold', $validated['circuit_breaker_threshold'], 'integer');
+        SystemSetting::setValue('usage_alert_enabled', $request->boolean('usage_alert_enabled'), 'boolean');
+        SystemSetting::setValue('usage_alert_minutes_threshold', $validated['usage_alert_minutes_threshold'], 'integer');
 
         return back()->with('success', 'Settings updated successfully.');
     }

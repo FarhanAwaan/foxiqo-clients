@@ -56,7 +56,7 @@
                             <div class="hero-metric-secondary">{{ number_format($activeSubscriptions) }}</div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="subheader">Active Companies</div>
+                            <div class="subheader">Active Customers</div>
                             <div class="hero-metric-secondary">{{ number_format($activeCompanies) }}</div>
                         </div>
                         <div class="col-6 col-md-3">
@@ -124,7 +124,7 @@
                         <thead>
                             <tr>
                                 <th>Invoice #</th>
-                                <th>Company</th>
+                                <th>Customer</th>
                                 <th>Amount</th>
                                 <th>Status</th>
                             </tr>
@@ -182,7 +182,7 @@
                         <thead>
                             <tr>
                                 <th>Agent</th>
-                                <th>Company</th>
+                                <th>Customer</th>
                                 <th>Plan</th>
                                 <th>Status</th>
                             </tr>

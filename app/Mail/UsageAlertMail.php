@@ -26,14 +26,18 @@ class UsageAlertMail extends Mailable
 
     public function content(): Content
     {
+        $plan = $this->subscription->plan;
+        $usageCost = $this->subscription->minutes_used * (float) ($plan->per_minute_rate ?? 0);
+
         return new Content(
             view: 'emails.admin.usage-alert',
             with: [
                 'subscription' => $this->subscription,
                 'company' => $this->subscription->company,
                 'agent' => $this->subscription->agent,
-                'plan' => $this->subscription->plan,
-                'usagePercentage' => $this->subscription->getUsagePercentage(),
+                'plan' => $plan,
+                'usageCost' => $usageCost,
+                'predictedTotal' => (float) $plan->price + $usageCost,
             ],
         );
     }

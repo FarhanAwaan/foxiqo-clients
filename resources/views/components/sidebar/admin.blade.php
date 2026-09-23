@@ -26,13 +26,17 @@
                     <span class="nav-link disabled text-uppercase small">Management</span>
                 </li>
 
-                <!-- Companies -->
+                <!-- Customers (Company model/routes unchanged — display label only) -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.companies.*') ? 'active' : '' }}" href="{{ route('admin.companies.index') }}">
                         <span class="nav-link-icon d-md-none d-lg-inline-block">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0" /><path d="M9 8l1 0" /><path d="M9 12l1 0" /><path d="M9 16l1 0" /><path d="M14 8l1 0" /><path d="M14 12l1 0" /><path d="M14 16l1 0" /><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16" /></svg>
                         </span>
-                        <span class="nav-link-title">Companies</span>
+                        <span class="nav-link-title">Customers</span>
+                        @php $unprovisionedCompanyCount = \App\Models\Company::where('status', 'active')->doesntHave('agents')->count(); @endphp
+                        @if($unprovisionedCompanyCount > 0)
+                            <span class="badge badge-sm bg-yellow-lt text-yellow ms-auto" title="Active customers with no assistant set up yet">{{ $unprovisionedCompanyCount }}</span>
+                        @endif
                     </a>
                 </li>
 
@@ -67,62 +71,50 @@
                     </a>
                 </li>
 
-                <!-- Plans -->
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.plans.*') ? 'active' : '' }}" href="{{ route('admin.plans.index') }}">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" /><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /><path d="M9 12l.01 0" /><path d="M13 12l2 0" /><path d="M9 16l.01 0" /><path d="M13 16l2 0" /></svg>
-                        </span>
-                        <span class="nav-link-title">Plans</span>
-                    </a>
-                </li>
-
                 <li class="nav-item pt-2">
                     <span class="nav-link disabled text-uppercase small">Billing</span>
                 </li>
 
-                <!-- Subscriptions -->
+                <!-- Deals -->
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}" href="{{ route('admin.subscriptions.index') }}">
+                    <a class="nav-link {{ request()->routeIs('deals.*') ? 'active' : '' }}" href="{{ route('deals.index') }}">
                         <span class="nav-link-icon d-md-none d-lg-inline-block">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7l7 0l0 7" /></svg>
                         </span>
-                        <span class="nav-link-title">Subscriptions</span>
+                        <span class="nav-link-title">Deals</span>
                     </a>
                 </li>
 
-                <!-- Invoices -->
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}" href="{{ route('admin.invoices.index') }}">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 7l1 0" /><path d="M9 13l6 0" /><path d="M13 17l2 0" /></svg>
-                        </span>
-                        <span class="nav-link-title">Invoices</span>
-                    </a>
-                </li>
+                @php
+                    $billingRoutes = ['admin.billing.*', 'admin.subscriptions.*', 'admin.invoices.*', 'admin.receipts.*', 'admin.plans.*'];
+                    $inBillingSection = request()->routeIs($billingRoutes);
+                @endphp
 
-                <!-- Payment Receipts -->
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.receipts.*') ? 'active' : '' }}" href="{{ route('admin.receipts.index') }}">
+                <!-- Billing & Usage -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ $inBillingSection ? 'active' : '' }}" href="#navbar-billing-usage" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="{{ $inBillingSection ? 'true' : 'false' }}">
                         <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2" /><path d="M14 8h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5" /><path d="M12 6v2" /><path d="M12 14v2" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 5m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" /><path d="M3 13m0 1a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1z" /><path d="M14 13l7 0" /><path d="M14 17l7 0" /><path d="M14 21l7 0" /></svg>
                         </span>
-                        <span class="nav-link-title">Receipts</span>
-                        @php $pendingReceiptCount = \App\Models\PaymentReceipt::pending()->count(); @endphp
-                        @if($pendingReceiptCount > 0)
-                            <span class="badge badge-sm bg-red-lt text-red ms-auto">{{ $pendingReceiptCount }}</span>
+                        <span class="nav-link-title">Billing &amp; Usage</span>
+                        @php $overdueCompanyCount = \App\Models\Invoice::overdue()->distinct('company_id')->count('company_id'); @endphp
+                        @if($overdueCompanyCount > 0)
+                            <span class="badge badge-sm bg-red-lt text-red ms-auto">{{ $overdueCompanyCount }}</span>
                         @endif
                     </a>
-                </li>
-
-                <!-- Revenue -->
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.revenue.*') ? 'active' : '' }}" href="{{ route('admin.revenue.index') }}">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1 -1.8 -1" /><path d="M12 7v10" /></svg>
-                        </span>
-                        <span class="nav-link-title">Revenue</span>
-                    </a>
+                    <div class="dropdown-menu {{ $inBillingSection ? 'show' : '' }}">
+                        <a class="dropdown-item {{ request()->routeIs('admin.billing.*') ? 'active' : '' }}" href="{{ route('admin.billing.index') }}">Overview</a>
+                        <a class="dropdown-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}" href="{{ route('admin.subscriptions.index') }}">Subscriptions</a>
+                        <a class="dropdown-item {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}" href="{{ route('admin.invoices.index') }}">Invoices</a>
+                        <a class="dropdown-item {{ request()->routeIs('admin.receipts.*') ? 'active' : '' }}" href="{{ route('admin.receipts.index') }}">
+                            Transfer Receipts
+                            @php $pendingReceiptCount = \App\Models\PaymentReceipt::pending()->count(); @endphp
+                            @if($pendingReceiptCount > 0)
+                                <span class="badge badge-sm bg-red-lt text-red ms-1">{{ $pendingReceiptCount }}</span>
+                            @endif
+                        </a>
+                        <a class="dropdown-item {{ request()->routeIs('admin.plans.*') ? 'active' : '' }}" href="{{ route('admin.plans.index') }}">Plans</a>
+                    </div>
                 </li>
 
                 <li class="nav-item pt-2">
@@ -146,6 +138,20 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
                         </span>
                         <span class="nav-link-title">Activity Logs</span>
+                    </a>
+                </li>
+
+                <!-- Emails -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.index') }}">
+                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" /><path d="M3 7l9 6l9 -6" /></svg>
+                        </span>
+                        <span class="nav-link-title">Emails</span>
+                        @php $failedEmailCount = \App\Models\Notification::where('channel','email')->where('status','failed')->count(); @endphp
+                        @if($failedEmailCount > 0)
+                            <span class="badge badge-sm bg-red-lt text-red ms-auto">{{ $failedEmailCount }}</span>
+                        @endif
                     </a>
                 </li>
             </ul>

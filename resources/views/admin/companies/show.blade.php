@@ -3,7 +3,7 @@
 @section('title', $company->name)
 
 @section('page-pretitle')
-    Companies
+    Customers
 @endsection
 
 @section('page-header')
@@ -14,7 +14,7 @@
     <div class="btn-list">
         <a href="{{ route('admin.companies.edit', $company) }}" class="btn btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
-            Edit Company
+            Edit Customer
         </a>
         <a href="{{ route('admin.users.create') }}?company_id={{ $company->uuid }}" class="btn btn-outline-primary">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
@@ -33,7 +33,7 @@
             <!-- Company Details Card -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Company Details</h3>
+                    <h3 class="card-title">Customer Details</h3>
                     <div class="card-actions">
                         @switch($company->status)
                             @case('active')
@@ -121,6 +121,36 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Billing & Usage -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Billing &amp; Usage</h3>
+                    <div class="card-actions">
+                        @if($billingSummary['has_overdue'])
+                            <span class="badge bg-red-lt">Overdue</span>
+                        @elseif($billingSummary['has_trial'])
+                            <span class="badge bg-purple-lt">Trial</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="subheader">MRR</div>
+                            <div class="h2 mb-0">${{ number_format($billingSummary['mrr'], 2) }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="subheader">Usage This Period</div>
+                            <div class="h2 mb-0">${{ number_format($billingSummary['usage_cost'], 2) }}</div>
+                            <div class="text-muted small">{{ number_format($billingSummary['minutes_used'], 1) }} min used</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    <a href="{{ route('admin.billing.index') }}" class="text-muted small">View all customers &rarr;</a>
                 </div>
             </div>
 
@@ -293,7 +323,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Recent Invoices</h3>
                     <div class="card-actions">
-                        <a href="{{ route('admin.invoices.index') }}?company={{ $company->uuid }}" class="btn btn-ghost-primary btn-md">
+                        <a href="{{ route('admin.invoices.index', ['company_id' => $company->id]) }}" class="btn btn-ghost-primary btn-md">
                             View All
                         </a>
                     </div>
@@ -303,6 +333,7 @@
                         <thead>
                             <tr>
                                 <th>Invoice #</th>
+                                <th>Type</th>
                                 <th>Amount</th>
                                 <th>Due Date</th>
                                 <th>Status</th>
@@ -315,6 +346,15 @@
                                         <a href="{{ route('admin.invoices.show', $invoice) }}">
                                             {{ $invoice->invoice_number }}
                                         </a>
+                                    </td>
+                                    <td>
+                                        @if($invoice->isUsageInvoice())
+                                            <span class="badge bg-purple-lt">Usage</span>
+                                        @elseif($invoice->isActivationInvoice())
+                                            <span class="badge bg-orange-lt">Activation</span>
+                                        @else
+                                            <span class="badge bg-blue-lt">Retainer</span>
+                                        @endif
                                     </td>
                                     <td class="text-money">${{ number_format($invoice->amount, 2) }}</td>
                                     <td>{{ $invoice->due_date?->format('M d, Y') ?? '-' }}</td>
@@ -336,7 +376,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">
+                                    <td colspan="5" class="text-center text-muted py-4">
                                         No invoices yet
                                     </td>
                                 </tr>

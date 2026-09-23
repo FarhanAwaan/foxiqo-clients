@@ -1,13 +1,13 @@
 @extends('layouts.admin')
 
-@section('title', 'Payment Receipts')
+@section('title', 'Transfer Receipts')
 
 @section('page-pretitle')
     Billing
 @endsection
 
 @section('page-header')
-    Payment Receipts
+    Transfer Receipts
 @endsection
 
 @section('content')
@@ -31,7 +31,7 @@
             <div class="card-actions">
                 <form action="{{ route('admin.receipts.index') }}" method="GET" class="d-flex gap-2 flex-wrap">
                     <select name="company_id" class="form-select form-select-sm" style="width: 180px;" onchange="this.form.submit()">
-                        <option value="">All Companies</option>
+                        <option value="">All Customers</option>
                         @foreach($companies as $company)
                             <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
                                 {{ $company->name }}
@@ -55,7 +55,7 @@
                 <thead>
                     <tr>
                         <th>Invoice</th>
-                        <th>Company</th>
+                        <th>Customer</th>
                         <th>File</th>
                         <th>Amount</th>
                         <th>Uploaded</th>
