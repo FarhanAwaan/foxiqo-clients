@@ -178,8 +178,17 @@ class SettingsController extends Controller
 
         $this->auditService->logAction('setting_revealed', null, ['key' => $key]);
 
+        // Reads the row directly instead of SystemSetting::getValue(): that caches the
+        // decrypted value for an hour, so clicking the eye would leave a plain-text copy in
+        // the cache table and could show a value that no longer matches what's stored.
+        $setting = SystemSetting::where('key', $key)->first();
+        $value = $setting?->value;
+        if ($setting?->is_sensitive && $value) {
+            $value = decrypt($value);
+        }
+
         return response()
-            ->json(['value' => (string) SystemSetting::getValue($key, '')])
+            ->json(['value' => (string) $value])
             ->header('Cache-Control', 'no-store, private');
     }
 }
