@@ -26,6 +26,7 @@
                         @endif
                         <th>Price</th>
                         <th>Status</th>
+                        <th>Billing</th>
                         <th>Created</th>
                         <th class="w-1"></th>
                     </tr>
@@ -45,7 +46,7 @@
                             @if(auth()->user()->can('deals.view-all'))
                                 <td>{{ $deal->closer->full_name ?? '-' }}</td>
                             @endif
-                            <td>${{ number_format($deal->agreed_monthly_price, 2) }}/mo + ${{ number_format($deal->activation_price, 2) }}</td>
+                            <td>{{ \App\Support\DealTerms::summary($deal) }}</td>
                             <td>
                                 @switch($deal->status)
                                     @case('paid')
@@ -58,6 +59,18 @@
                                         <span class="badge bg-blue-lt">Sent</span>
                                 @endswitch
                             </td>
+                            <td>
+                                @if($deal->paddle_status_label)
+                                    <span class="badge {{ $deal->paddle_status_badge }}">{{ $deal->paddle_status_label }}</span>
+                                    @if($deal->isTrialing() && $deal->trial_ends_at)
+                                        <div class="text-muted small">charges {{ \App\Support\BillingTime::date($deal->trial_ends_at) }}</div>
+                                    @elseif($deal->paddle_status === 'active' && $deal->next_billed_at)
+                                        <div class="text-muted small">next {{ \App\Support\BillingTime::date($deal->next_billed_at) }}</div>
+                                    @endif
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
                             <td class="text-muted">{{ $deal->created_at->format('M d, Y') }}</td>
                             <td>
                                 <a href="{{ route('deals.show', $deal) }}" class="btn btn-sm btn-outline-primary">View</a>
@@ -65,7 +78,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7">
+                            <td colspan="8">
                                 <div class="empty-state py-4">
                                     <div class="empty-state-icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7l7 0l0 7" /></svg>

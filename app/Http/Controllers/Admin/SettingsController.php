@@ -33,6 +33,7 @@ class SettingsController extends Controller
             // Company/Branding
             'company_name' => SystemSetting::getValue('company_name', 'Foxiqo Client Portal'),
             'company_email' => SystemSetting::getValue('company_email', ''),
+            'admin_notification_email' => SystemSetting::getValue('admin_notification_email', ''),
 
             // Retell AI
             'retell_api_key' => SystemSetting::getValue('retell_api_key', ''),
@@ -78,6 +79,14 @@ class SettingsController extends Controller
             // Company/Branding
             'company_name' => ['required', 'string', 'max:255'],
             'company_email' => ['required', 'email', 'max:255'],
+            // Comma-separated; blank = notify every active admin user (see EmailService::adminRecipients()).
+            'admin_notification_email' => ['nullable', 'string', 'max:500', function ($attribute, $value, $fail) {
+                foreach (preg_split('/[\s,;]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY) as $email) {
+                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        $fail("\"{$email}\" is not a valid email address.");
+                    }
+                }
+            }],
 
             // Retell AI (optional - only update if provided)
             'retell_api_key' => ['nullable', 'string'],
@@ -112,6 +121,7 @@ class SettingsController extends Controller
         // Save Company/Branding settings
         SystemSetting::setValue('company_name', $validated['company_name'], 'string');
         SystemSetting::setValue('company_email', $validated['company_email'], 'string');
+        SystemSetting::setValue('admin_notification_email', trim((string) ($validated['admin_notification_email'] ?? '')), 'string');
 
         // Save Retell AI settings (only if provided)
         if ($request->filled('retell_api_key')) {

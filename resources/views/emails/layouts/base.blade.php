@@ -42,7 +42,7 @@
                                 &copy; {{ date('Y') }} {{ config('app.name', 'Foxiqo') }}. All rights reserved.
                             </p>
                             <p style="margin:0; font-size:11px; color:#adb5bd;">
-                                This is an automated notification. Please do not reply directly to this email.
+                                @yield('footer_note', 'This is an automated notification. Please do not reply directly to this email.')
                             </p>
                         </td>
                     </tr>

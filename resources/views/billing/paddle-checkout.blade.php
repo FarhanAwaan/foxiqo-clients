@@ -13,21 +13,27 @@
                 </div>
                 <div class="col-auto text-end">
                     <div class="text-white-50 small">Due Today</div>
-                    <div class="h2 mb-0">${{ number_format($deal->agreed_monthly_price + $deal->activation_price, 2) }}</div>
+                    <div class="h2 mb-0">${{ number_format($deal->dueToday(), 2) }}</div>
                 </div>
             </div>
         </div>
 
         <div class="card-body">
-            <div class="row g-3 mb-4 text-start">
-                <div class="col-6">
-                    <div class="text-muted small">Monthly Subscription</div>
-                    <div class="fw-bold">${{ number_format($deal->agreed_monthly_price, 2) }}/mo</div>
-                </div>
-                <div class="col-6">
-                    <div class="text-muted small">One-time Activation</div>
-                    <div class="fw-bold">${{ number_format($deal->activation_price, 2) }}</div>
-                </div>
+            {{-- Same wording as the emails (App\Support\DealTerms); the total is in the header above --}}
+            <div class="mb-4 text-start">
+                @foreach($rows as $row)
+                    @continue(!empty($row[2]))
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">{{ $row[0] }}</span>
+                        <span class="fw-bold text-end ms-3">{{ $row[1] }}</span>
+                    </div>
+                @endforeach
+                @if($deal->hasRecurring() && $deal->is_trial)
+                    <div class="small mt-2">
+                        Your card is charged {{ '$' . number_format($deal->dueToday(), 2) }} today. The {{ $deal->trial_days }}-day free trial starts now, and
+                        {{ '$' . number_format($deal->agreed_monthly_price, 2) }} is then charged automatically each month. Cancel any time before the trial ends and nothing further is charged.
+                    </div>
+                @endif
             </div>
 
             <div id="paddle-checkout-loading" class="text-center py-4">

@@ -58,7 +58,10 @@ class CompanyController extends Controller
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
+            'is_demo' => ['nullable', 'boolean'],
         ]);
+
+        $validated['is_demo'] = $request->boolean('is_demo');
 
         $company = Company::create($validated);
 
@@ -109,7 +112,10 @@ class CompanyController extends Controller
             'notes' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'brand_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'is_demo' => ['nullable', 'boolean'],
         ]);
+
+        $validated['is_demo'] = $request->boolean('is_demo');
 
         if ($request->hasFile('logo')) {
             if ($company->logo_path) {

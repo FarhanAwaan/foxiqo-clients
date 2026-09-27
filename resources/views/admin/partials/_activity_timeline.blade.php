@@ -21,7 +21,11 @@
                             @endif
                         </div>
                         @php
-                            $extra = collect($entry->new_values ?? [])->only(['paddle_transaction_id', 'invoice_id', 'action', 'status', 'error'])->filter();
+                            // A Deal's own entries would just repeat its status/transaction id on every line;
+                            // for them only the context the action logged (dates, reason) is worth showing.
+                            $isDeal = $entry->entity_type === \App\Models\Deal::class;
+                            $extra = ($isDeal ? collect() : collect($entry->new_values ?? [])->only(['paddle_transaction_id', 'invoice_id', 'action', 'status', 'error'])->filter())
+                                ->merge(collect($entry->old_values ?? [])->only(['from', 'to', 'reason', 'error'])->filter());
                         @endphp
                         @if($extra->isNotEmpty())
                             <div class="text-muted small mt-1">

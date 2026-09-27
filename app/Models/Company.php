@@ -16,7 +16,11 @@ class Company extends Model
         'uuid', 'name', 'email', 'billing_email', 'phone',
         'address', 'city', 'state', 'postal_code', 'country',
         'status', 'webhook_signature', 'notes',
-        'logo_path', 'brand_color', 'paddle_customer_id',
+        'logo_path', 'brand_color', 'paddle_customer_id', 'is_demo',
+    ];
+
+    protected $casts = [
+        'is_demo' => 'boolean',
     ];
 
     protected static function booted(): void

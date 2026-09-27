@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Deal;
+use App\Models\Invoice;
 use App\Services\DealService;
+use App\Services\EmailService;
 use App\Services\PaymentProviderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -12,7 +15,8 @@ use Illuminate\View\View;
 class DealController extends Controller
 {
     public function __construct(
-        protected DealService $dealService
+        protected DealService $dealService,
+        protected EmailService $emailService
     ) {}
 
     public function index(Request $request): View
@@ -26,11 +30,29 @@ class DealController extends Controller
         return view('deals.index', compact('deals'));
     }
 
-    public function create(): View
+    /**
+     * New deal — or, with ?parent={uuid}, the monthly retainer for a paid setup-only deal
+     * (customer details are inherited; only the price and trial are asked for).
+     */
+    public function create(Request $request): View|RedirectResponse
     {
+        $parent = null;
+
+        if ($request->filled('parent')) {
+            $parent = Deal::where('uuid', $request->query('parent'))->firstOrFail();
+            $this->authorizeAccess($parent);
+
+            try {
+                $this->dealService->assertCanAddRetainer($parent);
+            } catch (\InvalidArgumentException $e) {
+                return redirect()->route('deals.show', $parent)->with('error', $e->getMessage());
+            }
+        }
+
         return view('deals.create', [
             'paddleAvailable' => PaymentProviderService::isConfigured('paddle'),
             'canOverrideFloor' => auth()->user()->can('deals.override-price-floor'),
+            'parent' => $parent,
         ]);
     }
 
@@ -40,20 +62,37 @@ class DealController extends Controller
             return back()->withInput()->with('error', 'Paddle is currently disabled or not configured — deals can\'t be created right now. Contact an admin.');
         }
 
+        // A retainer deal inherits the customer from its parent, so those fields aren't asked for.
+        $customerRule = $request->filled('parent_deal') ? 'nullable' : 'required';
+
         $validated = $request->validate([
-            'customer_name' => ['required', 'string', 'max:255'],
-            'business_name' => ['required', 'string', 'max:255'],
+            'parent_deal' => ['nullable', 'string', 'exists:deals,uuid'],
+            'billing_mode' => ['nullable', 'in:recurring,setup_only'],
+            'customer_name' => [$customerRule, 'string', 'max:255'],
+            'business_name' => [$customerRule, 'string', 'max:255'],
             'industry' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:100'],
             'country' => ['nullable', 'string', 'max:100'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => [$customerRule, 'email', 'max:255'],
             'website' => ['nullable', 'string', 'max:255'],
-            'agreed_monthly_price' => ['required', 'numeric', 'min:0'],
+            // The business rules ("must be more than $0", the price floor) live in DealService.
+            'agreed_monthly_price' => ['nullable', 'numeric', 'min:0'],
             'activation_price' => ['nullable', 'numeric', 'min:0'],
             'is_trial' => ['nullable', 'boolean'],
             'trial_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'email_link' => ['nullable', 'boolean'],
         ]);
+
+        $parent = null;
+
+        if (!empty($validated['parent_deal'])) {
+            $parent = Deal::where('uuid', $validated['parent_deal'])->firstOrFail();
+            $this->authorizeAccess($parent);
+        }
+
+        $validated['parent_deal_id'] = $parent?->id;
+        $validated['email_link'] = $request->boolean('email_link');
 
         try {
             $deal = $this->dealService->create(auth()->user(), $validated);
@@ -64,16 +103,65 @@ class DealController extends Controller
         }
 
         return redirect()->route('deals.show', $deal)
-            ->with('success', 'Deal created. Send the checkout link below to the customer.');
+            ->with('success', $validated['email_link']
+                ? "Deal created. The checkout link was emailed to {$deal->email} and you'll be told when they pay."
+                : 'Deal created. Send the checkout link below to the customer.');
     }
 
     public function show(Deal $deal): View
     {
         $this->authorizeAccess($deal);
 
-        $deal->load(['closer', 'company']);
+        $deal->load(['closer', 'company', 'parentDeal', 'childDeals', 'subscription.agent']);
 
-        return view('deals.show', compact('deal'));
+        $isAdmin = auth()->user()->isAdmin();
+
+        // Admin only: what the portal has recorded for this deal, next to what Paddle holds.
+        $invoices = $isAdmin
+            ? Invoice::where(function ($q) use ($deal) {
+                $q->where('deal_id', $deal->id);
+
+                if ($deal->subscription_id) {
+                    $q->orWhere('subscription_id', $deal->subscription_id);
+                }
+            })->latest('id')->get()
+            : collect();
+
+        $activity = $isAdmin
+            ? AuditLog::where('entity_type', Deal::class)->where('entity_id', $deal->id)->with('user')->latest('id')->get()
+            : collect();
+
+        return view('deals.show', compact('deal', 'invoices', 'activity'));
+    }
+
+    /** Re-send the checkout link email — the customer lost it, or it went to spam. */
+    public function emailLink(Deal $deal): RedirectResponse
+    {
+        $this->authorizeAccess($deal);
+
+        if ($deal->status !== 'sent') {
+            return back()->with('error', 'Only a deal that is still waiting for payment has a checkout link to send.');
+        }
+
+        $this->emailService->sendDealCheckoutLink($deal);
+
+        return back()->with('success', "Checkout link emailed to {$deal->email}.");
+    }
+
+    /** Close an unpaid deal (wrong price, wrong customer…); its checkout link stops working. */
+    public function void(Request $request, Deal $deal): RedirectResponse
+    {
+        $this->authorizeAccess($deal);
+
+        $request->validate(['reason' => ['nullable', 'string', 'max:500']]);
+
+        try {
+            $this->dealService->void($deal, $request->input('reason'));
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('deals.show', $deal)->with('success', 'Deal voided. Its checkout link no longer works.');
     }
 
     protected function authorizeAccess(Deal $deal): void

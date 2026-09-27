@@ -15,9 +15,10 @@ class ProcessSubscriptionRenewals extends Command
 
     public function handle(SubscriptionService $subscriptionService): int
     {
-        $subscriptions = Subscription::active()
-            ->where('current_period_end', '<', now())
-            ->get();
+        // Only subscriptions this app bills itself. Paddle-managed ones roll their period when
+        // Paddle actually charges (SubscriptionService::recordPaddleCharge) — renewing them here
+        // too would create a second, competing period and invoice.
+        $subscriptions = Subscription::dueForInternalRenewal()->get();
 
         $this->info("Found {$subscriptions->count()} subscriptions due for renewal");
 

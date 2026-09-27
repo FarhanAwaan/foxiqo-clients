@@ -190,6 +190,11 @@
         </div>
 
         <div class="col-lg-8">
+            @if($subscription->isPaddleManaged() && $subscription->deal)
+                @php $subscription->deal->loadMissing('childDeals'); @endphp
+                @include('admin.partials._paddle_billing_card', ['deal' => $subscription->deal])
+            @endif
+
             <!-- Invoices -->
             <div class="card">
                 <div class="card-header">
@@ -210,6 +215,7 @@
                                 <th>Due Date</th>
                                 <th>Status</th>
                                 <th class="w-1"></th>
+                                <th class="w-1"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -220,7 +226,12 @@
                                             {{ $invoice->invoice_number }}
                                         </a>
                                     </td>
-                                    <td class="text-money">${{ number_format($invoice->amount, 2) }}</td>
+                                    <td class="text-money">
+                                        ${{ number_format($invoice->amount, 2) }}
+                                        @unless($invoice->reconcilesWithPaddle())
+                                            <div class="text-red small">Paddle: ${{ number_format($invoice->paddle_charged_amount, 2) }}</div>
+                                        @endunless
+                                    </td>
                                     <td>
                                         @if($invoice->billing_period_start && $invoice->billing_period_end)
                                             {{ $invoice->billing_period_start->format('M d') }} - {{ $invoice->billing_period_end->format('M d, Y') }}
@@ -253,6 +264,13 @@
                                         @endswitch
                                     </td>
                                     <td>
+                                        @if($invoice->paddle_transaction_id)
+                                            <a href="{{ route('admin.invoices.paddle-invoice', $invoice) }}" target="_blank" class="btn btn-icon btn-ghost-primary btn-sm" title="View in Paddle">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M9 15l6 -6" /><path d="M11 9h4v4" /></svg>
+                                            </a>
+                                        @endif
+                                    </td>
+                                    <td>
                                         <a href="{{ route('admin.invoices.show', $invoice) }}" class="btn btn-icon btn-ghost-primary btn-sm">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
                                         </a>
@@ -260,7 +278,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">
+                                    <td colspan="7" class="text-center text-muted py-4">
                                         No invoices generated yet
                                     </td>
                                 </tr>

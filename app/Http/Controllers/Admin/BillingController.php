@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\Deal;
 use App\Services\RevenueService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -48,11 +49,20 @@ class BillingController extends Controller
         $systemStats = $this->revenueService->getSystemStats($startDate, $endDate);
         $mrr ??= $systemStats['current_mrr'];
 
+        // Paddle subscriptions whose charge date passed with no charge — a banner up top and a badge per
+        // customer. Scoped to the selected customer when one is chosen, like everything else on the page.
+        $overdueCharges = Deal::chargeOverdue()
+            ->when($selectedCompany, fn ($q) => $q->where('company_id', $selectedCompany->id))
+            ->with('company')
+            ->orderBy('next_billed_at')
+            ->get();
+        $overdueChargeCompanyIds = $overdueCharges->pluck('company_id')->filter()->unique();
+
         $sort = $request->input('sort', 'name');
 
         $companyRows = collect();
         if (!$selectedCompany) {
-            $companyRows = $companies->load('agents.subscription.plan')->map(function (Company $company) use ($startDate, $endDate) {
+            $companyRows = $companies->load('agents.subscription.plan')->map(function (Company $company) use ($startDate, $endDate, $overdueChargeCompanyIds) {
                 $revenueStats = $this->revenueService->getCompanyStats($company, $startDate, $endDate);
                 $activeSubscriptions = $company->agents->pluck('subscription')->filter(fn ($s) => $s?->status === 'active');
 
@@ -69,6 +79,7 @@ class BillingController extends Controller
                     'profit' => $revenueStats['profit'],
                     'margin' => $revenueStats['margin'],
                     'has_overdue' => $company->invoices()->overdue()->exists(),
+                    'charge_overdue' => $overdueChargeCompanyIds->contains($company->id),
                     'has_trial' => $activeSubscriptions->contains('is_trial', true),
                 ];
             });
@@ -78,7 +89,7 @@ class BillingController extends Controller
                 'mrr' => $companyRows->sortByDesc('mrr'),
                 'usage' => $companyRows->sortByDesc('usage_cost'),
                 'margin' => $companyRows->sortBy('margin'),
-                'overdue' => $companyRows->sortByDesc('has_overdue'),
+                'overdue' => $companyRows->sortByDesc(fn ($row) => $row->has_overdue || $row->charge_overdue),
                 default => $companyRows->sortBy(fn ($row) => $row->company->name),
             })->values();
         }
@@ -95,7 +106,7 @@ class BillingController extends Controller
 
         return view('admin.billing.index', compact(
             'paginatedRows', 'sort', 'systemStats', 'selectedCompany', 'companyStats', 'mrr',
-            'companies', 'startDate', 'endDate'
+            'companies', 'startDate', 'endDate', 'overdueCharges'
         ));
     }
 }

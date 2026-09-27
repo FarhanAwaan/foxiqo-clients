@@ -65,6 +65,9 @@
                                         <a href="{{ route('admin.companies.show', $company) }}" class="text-reset">
                                             {{ $company->name }}
                                         </a>
+                                        @if($company->is_demo)
+                                            <span class="badge bg-purple-lt ms-1" title="Excluded from automated billing">Demo</span>
+                                        @endif
                                         @if($company->city || $company->country)
                                             <div class="text-muted small">
                                                 {{ collect([$company->city, $company->country])->filter()->implode(', ') }}

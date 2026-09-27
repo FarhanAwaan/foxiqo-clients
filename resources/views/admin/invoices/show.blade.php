@@ -188,6 +188,44 @@
                             <p class="text-muted">{{ $invoice->notes }}</p>
                         </div>
                     @endif
+
+                    @if($invoice->paddle_charged_amount !== null)
+                        <div class="mt-4">
+                            <h4>
+                                Paddle's own record
+                                @unless($invoice->reconcilesWithPaddle())
+                                    <span class="badge bg-red-lt ms-1">Doesn't match</span>
+                                @endunless
+                            </h4>
+                            <table class="table table-sm table-borderless mb-0" style="max-width: 420px;">
+                                <tr>
+                                    <td class="text-muted">Charged to the card</td>
+                                    <td class="text-end text-money">${{ number_format($invoice->paddle_charged_amount, 2) }}</td>
+                                </tr>
+                                @if($invoice->paddle_tax_amount > 0)
+                                    <tr>
+                                        <td class="text-muted">&hellip;of which tax</td>
+                                        <td class="text-end text-money">${{ number_format($invoice->paddle_tax_amount, 2) }}</td>
+                                    </tr>
+                                @endif
+                                @if($invoice->paddle_fee_amount !== null)
+                                    <tr>
+                                        <td class="text-muted">Paddle's fee</td>
+                                        <td class="text-end text-money">${{ number_format($invoice->paddle_fee_amount, 2) }}</td>
+                                    </tr>
+                                @endif
+                                @if($invoice->paddle_refunded_amount > 0)
+                                    <tr class="text-red">
+                                        <td>Refunded</td>
+                                        <td class="text-end text-money">${{ number_format($invoice->paddle_refunded_amount, 2) }}</td>
+                                    </tr>
+                                @endif
+                            </table>
+                            @unless($invoice->reconcilesWithPaddle())
+                                <div class="text-muted small mt-2">This invoice's own amount (${{ number_format($invoice->amount, 2) }}{{ $invoice->paddle_tax_amount > 0 ? ' + $' . number_format($invoice->paddle_tax_amount, 2) . ' tax' : '' }}) doesn't add up to what Paddle shows as charged — worth a look (a discount, a proration, or two invoices sharing one transaction that didn't split as expected).</div>
+                            @endunless
+                        </div>
+                    @endif
                 </div>
             </div>
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\SignupController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\DealBillingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AgentController as AdminAgentController;
 use App\Http\Controllers\Admin\CallLogController as AdminCallLogController;
@@ -108,6 +109,8 @@ Route::middleware(['auth', 'role_or_permission:admin|closer'])->prefix('deals')-
     Route::get('create', [DealController::class, 'create'])->name('create');
     Route::post('/', [DealController::class, 'store'])->name('store');
     Route::get('{deal:uuid}', [DealController::class, 'show'])->name('show');
+    Route::post('{deal:uuid}/email-link', [DealController::class, 'emailLink'])->middleware('throttle:6,1')->name('email-link');
+    Route::post('{deal:uuid}/void', [DealController::class, 'void'])->name('void');
 });
 
 /*
@@ -166,6 +169,14 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     Route::post('subscriptions/{subscription}/activate', [SubscriptionController::class, 'activate'])->name('subscriptions.activate');
     Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel'])->name('subscriptions.cancel');
 
+    // Deal billing (Paddle) — steer a deal's trial/subscription from the portal. Each action
+    // calls Paddle and re-syncs; the customer and admin emails come from the detected change.
+    Route::post('deals/{deal:uuid}/billing/extend', [DealBillingController::class, 'extend'])->name('deals.billing.extend');
+    Route::post('deals/{deal:uuid}/billing/activate', [DealBillingController::class, 'activate'])->name('deals.billing.activate');
+    Route::post('deals/{deal:uuid}/billing/cancel', [DealBillingController::class, 'cancel'])->name('deals.billing.cancel');
+    Route::post('deals/{deal:uuid}/billing/resume', [DealBillingController::class, 'resume'])->name('deals.billing.resume');
+    Route::post('deals/{deal:uuid}/billing/sync', [DealBillingController::class, 'sync'])->name('deals.billing.sync');
+
     // Invoice Management
     Route::resource('invoices', InvoiceController::class)->only(['index', 'show']);
     Route::post('invoices/{invoice}/send-payment-link', [InvoiceController::class, 'sendPaymentLink'])->name('invoices.send-payment-link');
@@ -194,6 +205,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
 
     // Outbound Emails
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
+    Route::get('notifications/{notification}/body', [NotificationController::class, 'body'])->name('notifications.body');
 
     // Roles & Permissions (closer's admin-configurable access)
     Route::get('roles', [RoleController::class, 'index'])->name('roles.index');

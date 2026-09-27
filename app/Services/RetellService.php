@@ -234,6 +234,13 @@ class RetellService
             return;
         }
 
+        // A demo company is fully excluded from automated billing processing — see
+        // PaddleLifecycleService::isDemo(). Minutes still accrue above (real usage tracking for
+        // the demo isn't affected), just no email about it.
+        if ($subscription->company?->is_demo) {
+            return;
+        }
+
         $thresholdMinutes = SystemSetting::getValue('usage_alert_minutes_threshold', 500);
 
         if ($subscription->minutes_used >= $thresholdMinutes && !$subscription->circuit_breaker_triggered) {

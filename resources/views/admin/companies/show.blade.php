@@ -8,6 +8,9 @@
 
 @section('page-header')
     {{ $company->name }}
+    @if($company->is_demo)
+        <span class="badge bg-purple-lt ms-2" title="Excluded from automated billing">Demo</span>
+    @endif
 @endsection
 
 @section('page-actions')

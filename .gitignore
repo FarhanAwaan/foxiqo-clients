@@ -34,6 +34,6 @@ package-lock.json
 .htaccess
 /public/.htaccess
 /*.md
-!/PROJECT.md
+PROJECT.md
 !/README.md
 /.claude

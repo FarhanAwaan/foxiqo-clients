@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Notification;
+use App\Support\MessageCopy;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,13 +28,22 @@ class SendEmailJob implements ShouldQueue
 
     public function handle(): void
     {
-        Mail::to($this->recipientEmail)->send($this->mailable);
+        $sent = Mail::to($this->recipientEmail)->send($this->mailable);
 
-        if ($this->notificationId) {
-            Notification::where('id', $this->notificationId)->update([
-                'status' => 'sent',
-                'sent_at' => now(),
-            ]);
+        $notification = $this->notificationId ? Notification::find($this->notificationId) : null;
+
+        if ($notification) {
+            $update = ['status' => 'sent', 'sent_at' => now()];
+
+            // Keep a copy of what was actually sent for Admin → Emails. Never allowed to turn a
+            // delivered email into a failure: the send already happened.
+            try {
+                $update += MessageCopy::fromSent($sent, $notification->keepsContent());
+            } catch (Throwable $e) {
+                report($e);
+            }
+
+            $notification->update($update);
         }
     }
 
@@ -44,11 +54,24 @@ class SendEmailJob implements ShouldQueue
      */
     public function failed(Throwable $exception): void
     {
-        if ($this->notificationId) {
-            Notification::where('id', $this->notificationId)->update([
-                'status' => 'failed',
-                'error' => $exception->getMessage(),
-            ]);
+        $notification = $this->notificationId ? Notification::find($this->notificationId) : null;
+
+        if (!$notification) {
+            return;
         }
+
+        $update = ['status' => 'failed', 'error' => $exception->getMessage()];
+
+        // The email never left, but what it WOULD have said is exactly what someone debugging the
+        // failure wants to see — render it now so the panel isn't empty.
+        if ($notification->keepsContent()) {
+            try {
+                $update['html_body'] = $this->mailable->render();
+            } catch (Throwable $e) {
+                // Rendering can fail for the same reason sending did; the error message above stands.
+            }
+        }
+
+        $notification->update($update);
     }
 }

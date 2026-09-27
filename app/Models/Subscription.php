@@ -6,6 +6,7 @@ use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Subscription extends Model
 {
@@ -59,6 +60,21 @@ class Subscription extends Model
         return $this->hasMany(BillingCycle::class);
     }
 
+    /** The Deal whose terms funded this subscription (deals.subscription_id), if it came from one. */
+    public function deal(): HasOne
+    {
+        return $this->hasOne(Deal::class);
+    }
+
+    /**
+     * Paddle-linked: Paddle — not this app's own cron — decides when the retainer is
+     * charged and when periods roll. See PaddleLifecycleService.
+     */
+    public function isPaddleManaged(): bool
+    {
+        return $this->paddle_subscription_id !== null;
+    }
+
     public function getEffectivePrice(): float
     {
         return $this->custom_price ?? $this->plan->price;
@@ -106,11 +122,39 @@ class Subscription extends Model
         return $query->where('status', 'active');
     }
 
+    /**
+     * A company flagged purely for demo purposes is invisible to every automated billing
+     * query — see PaddleLifecycleService::isDemo() for the Paddle-managed side of the same rule.
+     */
+    public function scopeExcludingDemo($query)
+    {
+        return $query->whereHas('company', fn ($q) => $q->where('is_demo', false));
+    }
+
+    /**
+     * "Expiring soon" warnings for subscriptions this app renews itself. Paddle-managed
+     * ones auto-renew on Paddle's schedule, so an "expires on X" email would be wrong.
+     */
     public function scopeExpiringSoon($query, int $days = 7)
     {
         return $query->where('status', 'active')
             ->where('is_trial', false)
-            ->whereBetween('current_period_end', [now(), now()->addDays($days)]);
+            ->whereNull('paddle_subscription_id')
+            ->whereBetween('current_period_end', [now(), now()->addDays($days)])
+            ->excludingDemo();
+    }
+
+    /**
+     * Subscriptions whose period this app's own renewal cron rolls. Paddle-managed ones
+     * are excluded: their period only ever advances when Paddle actually charges (see
+     * SubscriptionService::recordPaddleCharge()), so the two clocks can't drift apart.
+     */
+    public function scopeDueForInternalRenewal($query)
+    {
+        return $query->where('status', 'active')
+            ->whereNull('paddle_subscription_id')
+            ->where('current_period_end', '<', now())
+            ->excludingDemo();
     }
 
     /**
@@ -124,14 +168,22 @@ class Subscription extends Model
         return $query->where('status', 'active')
             ->where('is_trial', true)
             ->whereNull('paddle_subscription_id')
-            ->where('trial_ends_at', '<=', now());
+            ->where('trial_ends_at', '<=', now())
+            ->excludingDemo();
     }
 
+    /**
+     * Trials this app's own "ending soon" email covers. Paddle trials get their own
+     * accurate reminder (the card is charged automatically — no invoice is sent) from
+     * `paddle:send-trial-reminders`, so they're excluded here.
+     */
     public function scopeTrialEndingSoon($query, int $days = 3)
     {
         return $query->where('status', 'active')
             ->where('is_trial', true)
+            ->whereNull('paddle_subscription_id')
             ->where('trial_ending_warned', false)
-            ->whereBetween('trial_ends_at', [now(), now()->addDays($days)]);
+            ->whereBetween('trial_ends_at', [now(), now()->addDays($days)])
+            ->excludingDemo();
     }
 }

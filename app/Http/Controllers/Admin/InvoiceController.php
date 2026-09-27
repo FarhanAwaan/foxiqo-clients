@@ -34,10 +34,28 @@ class InvoiceController extends Controller
             $query->where('subscription_id', $request->subscription_id);
         }
 
+        // Over the WHOLE filtered set, not the 15 rows on the current page — the previous version
+        // summed $invoices->sum('amount') on the already-paginated collection, so every card here
+        // only ever reflected whatever happened to be on screen. paddle_charged_total is what Paddle's
+        // own transactions actually charged (App\Support\PaddleMoney), for every invoice that went
+        // through it — the number to hold up against Paddle's dashboard; paddle_recorded_total is our
+        // own `amount` for the same invoices, so the two totals are directly comparable.
+        $stats = (clone $query)->selectRaw(
+            "SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) as paid_amount,
+             SUM(CASE WHEN status IN ('sent', 'draft') THEN amount ELSE 0 END) as pending_amount,
+             SUM(CASE WHEN status = 'overdue' THEN amount ELSE 0 END) as overdue_amount,
+             SUM(CASE WHEN paddle_transaction_id IS NOT NULL THEN amount ELSE 0 END) as paddle_recorded_total,
+             SUM(CASE WHEN paddle_transaction_id IS NOT NULL THEN paddle_charged_amount ELSE 0 END) as paddle_charged_total,
+             SUM(paddle_refunded_amount) as paddle_refunded_total,
+             COUNT(CASE WHEN paddle_charged_amount IS NOT NULL
+                AND ABS(paddle_charged_amount - (amount + COALESCE(paddle_tax_amount, 0))) >= 0.01
+                THEN 1 END) as paddle_mismatch_count"
+        )->first();
+
         $invoices = $query->latest()->paginate(15)->withQueryString();
         $companies = Company::orderBy('name')->get();
 
-        return view('admin.invoices.index', compact('invoices', 'companies'));
+        return view('admin.invoices.index', compact('invoices', 'companies', 'stats'));
     }
 
     public function show(Invoice $invoice): View

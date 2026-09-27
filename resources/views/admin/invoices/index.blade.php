@@ -11,13 +11,7 @@
 @endsection
 
 @section('content')
-    <!-- Stats Cards -->
-    @php
-        $totalAmount = $invoices->sum('amount');
-        $paidAmount = $invoices->where('status', 'paid')->sum('amount');
-        $pendingAmount = $invoices->whereIn('status', ['sent', 'draft'])->sum('amount');
-        $overdueAmount = $invoices->where('status', 'overdue')->sum('amount');
-    @endphp
+    <!-- Stats Cards (the whole filtered set — see InvoiceController@index) -->
     <div class="row row-deck row-cards mb-4">
         <div class="col-sm-6 col-lg-3">
             <div class="card">
@@ -35,7 +29,7 @@
                     <div class="d-flex align-items-center">
                         <div class="subheader">Paid</div>
                     </div>
-                    <div class="h1 mb-0 text-green">${{ number_format($paidAmount, 0) }}</div>
+                    <div class="h1 mb-0 text-green">${{ number_format($stats->paid_amount, 0) }}</div>
                 </div>
             </div>
         </div>
@@ -45,7 +39,7 @@
                     <div class="d-flex align-items-center">
                         <div class="subheader">Pending</div>
                     </div>
-                    <div class="h1 mb-0 text-yellow">${{ number_format($pendingAmount, 0) }}</div>
+                    <div class="h1 mb-0 text-yellow">${{ number_format($stats->pending_amount, 0) }}</div>
                 </div>
             </div>
         </div>
@@ -55,11 +49,47 @@
                     <div class="d-flex align-items-center">
                         <div class="subheader">Overdue</div>
                     </div>
-                    <div class="h1 mb-0 text-red">${{ number_format($overdueAmount, 0) }}</div>
+                    <div class="h1 mb-0 text-red">${{ number_format($stats->overdue_amount, 0) }}</div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Paddle reconciliation: what Paddle's own transactions actually charged, next to what the
+         portal recorded for the same invoices (this filtered set) — see Invoice::reconcilesWithPaddle(). -->
+    @if($stats->paddle_recorded_total > 0 || $stats->paddle_mismatch_count > 0)
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center g-3">
+                    <div class="col-auto">
+                        <div class="subheader">Paddle collected</div>
+                        <div class="h2 mb-0">${{ number_format($stats->paddle_charged_total, 2) }}</div>
+                    </div>
+                    <div class="col-auto text-muted">vs.</div>
+                    <div class="col-auto">
+                        <div class="subheader">Portal recorded</div>
+                        <div class="h2 mb-0">${{ number_format($stats->paddle_recorded_total, 2) }}</div>
+                    </div>
+                    @if($stats->paddle_refunded_total > 0)
+                        <div class="col-auto">
+                            <div class="subheader">Refunded</div>
+                            <div class="h2 mb-0 text-red">${{ number_format($stats->paddle_refunded_total, 2) }}</div>
+                        </div>
+                    @endif
+                    <div class="col-auto ms-auto">
+                        @if($stats->paddle_mismatch_count > 0)
+                            <span class="badge bg-red-lt fs-6">{{ $stats->paddle_mismatch_count }} {{ Str::plural('invoice', $stats->paddle_mismatch_count) }} {{ $stats->paddle_mismatch_count === 1 ? "doesn't" : "don't" }} match Paddle</span>
+                        @else
+                            <span class="badge bg-green-lt fs-6">Every invoice matches Paddle</span>
+                        @endif
+                    </div>
+                </div>
+                @if($stats->paddle_mismatch_count > 0)
+                    <div class="text-muted small mt-2">A mismatch is usually tax Paddle added that the "Portal recorded" figure doesn't already account for, a discount, or a proration — open the invoice to see its own Paddle breakdown.</div>
+                @endif
+            </div>
+        </div>
+    @endif
 
     <div class="card">
         <div class="card-header">
@@ -100,6 +130,7 @@
                         <th>Billing Period</th>
                         <th>Due Date</th>
                         <th>Status</th>
+                        <th class="w-1" title="View in Paddle"></th>
                         <th class="w-1"></th>
                     </tr>
                 </thead>
@@ -140,6 +171,9 @@
                             </td>
                             <td class="text-money">
                                 <strong>${{ number_format($invoice->amount, 2) }}</strong>
+                                @unless($invoice->reconcilesWithPaddle())
+                                    <div class="text-red small" title="What Paddle's transaction actually shows as charged">Paddle: ${{ number_format($invoice->paddle_charged_amount, 2) }}</div>
+                                @endunless
                             </td>
                             <td>
                                 @if($invoice->billing_period_start && $invoice->billing_period_end)
@@ -184,6 +218,13 @@
                                 @endswitch
                             </td>
                             <td>
+                                @if($invoice->paddle_transaction_id)
+                                    <a href="{{ route('admin.invoices.paddle-invoice', $invoice) }}" target="_blank" class="btn btn-icon btn-ghost-primary btn-sm" title="View in Paddle">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M9 15l6 -6" /><path d="M11 9h4v4" /></svg>
+                                    </a>
+                                @endif
+                            </td>
+                            <td>
                                 <div class="dropdown">
                                     <button class="btn btn-icon btn-ghost-primary btn-md" data-bs-toggle="dropdown">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M12 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg>
@@ -212,7 +253,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9">
+                            <td colspan="10">
                                 <div class="empty-state py-4">
                                     <div class="empty-state-icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 7l1 0" /><path d="M9 13l6 0" /><path d="M13 17l2 0" /></svg>

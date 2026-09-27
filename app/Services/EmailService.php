@@ -3,8 +3,15 @@
 namespace App\Services;
 
 use App\Jobs\SendEmailJob;
+use App\Mail\AdminAlertMail;
+use App\Mail\DealBillingUpdateMail;
+use App\Mail\DealCheckoutLinkMail;
+use App\Mail\DealPaidMail;
+use App\Mail\DealTrialEndingMail;
 use App\Mail\MissedCallAlertMail;
 use App\Mail\NewReceiptUploadedMail;
+use App\Mail\PaddleChargeReceiptMail;
+use App\Mail\PaddleUsageChargeReceiptMail;
 use App\Mail\PasswordResetMail;
 use App\Mail\PaymentConfirmationMail;
 use App\Mail\PaymentLinkMail;
@@ -23,6 +30,7 @@ use App\Mail\UsageAlertMail;
 use App\Mail\UserInvitationMail;
 use App\Mail\WelcomeMail;
 use App\Models\CallLog;
+use App\Models\Deal;
 use App\Models\Invoice;
 use App\Models\Notification;
 use App\Models\Payment;
@@ -31,6 +39,9 @@ use App\Models\PaymentReceipt;
 use App\Models\Subscription;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Support\BillingTime;
+use App\Support\DealTerms;
+use Carbon\Carbon;
 use Illuminate\Contracts\Mail\Mailable;
 
 class EmailService
@@ -149,6 +160,72 @@ class EmailService
             data: [
                 'subscription_id' => $subscription->id,
                 'invoice_id' => $invoice->id,
+            ]
+        );
+    }
+
+    /**
+     * "Your card was charged" for a Paddle retainer charge — a monthly renewal, or the first charge
+     * when a free trial ends. The paid-wording counterpart of sendSubscriptionRenewal(), which is for
+     * invoices this app collects itself and asks for payment. Goes to the company's billing contact
+     * when an assistant is attached, otherwise to the deal's own address (no assistant yet).
+     */
+    public function sendPaddleChargeReceipt(Invoice $invoice, ?Subscription $subscription, ?Deal $deal, bool $convertedFromTrial, ?Invoice $usageInvoice = null): void
+    {
+        $invoice->load('company');
+        $company = $invoice->company;
+
+        $name = $subscription?->agent?->name ?? $deal?->business_name ?? $company->name;
+        $recipient = $subscription ? $company->effective_billing_email : ($deal?->email ?? $company->effective_billing_email);
+        $greeting = $subscription || !$deal ? "Dear {$company->name}" : 'Hi ' . DealTerms::firstName($deal);
+
+        // The mirror is refreshed right after a charge is recorded, but if that read failed it still holds the
+        // date that just passed — better to leave "next charge" out than to print a stale one.
+        $next = $deal?->next_billed_at?->isFuture() ? $deal->next_billed_at : null;
+
+        $mailable = new PaddleChargeReceiptMail($invoice, $name, $greeting, $convertedFromTrial, $next, $usageInvoice);
+        $totalAmount = (float) $invoice->amount + (float) ($usageInvoice->amount ?? 0);
+
+        $this->createNotificationAndDispatch(
+            mailable: $mailable,
+            recipientEmail: $recipient,
+            type: 'paddle_charge_receipt',
+            subject: $mailable->envelope()->subject,
+            body: ($convertedFromTrial ? 'First charge after the free trial' : 'Monthly charge') . " of " . DealTerms::money($totalAmount) . " for {$name}"
+                . ($usageInvoice ? " (retainer + usage, combined)" : '') . " confirmed to {$recipient} (invoice {$invoice->invoice_number}" . ($usageInvoice ? ", {$usageInvoice->invoice_number}" : '') . ").",
+            companyId: $company->id,
+            data: array_filter([
+                'invoice_id' => $invoice->id,
+                'usage_invoice_id' => $usageInvoice?->id,
+                'subscription_id' => $subscription?->id,
+                'deal_id' => $deal?->id,
+            ])
+        );
+    }
+
+    /**
+     * "We charged you" for a usage-overage one-time charge Paddle collected on top of the retainer —
+     * PaddleChargeReceiptMail's sibling for the metered-minutes amount, which is always its own
+     * charge (see PaddleLifecycleService::chargeUsageInvoice()), never combined into one number.
+     */
+    public function sendPaddleUsageChargeReceipt(Invoice $invoice, Subscription $subscription): void
+    {
+        $invoice->load('company');
+        $company = $invoice->company;
+        $subscription->loadMissing(['agent', 'plan']);
+
+        $mailable = new PaddleUsageChargeReceiptMail($invoice, $subscription);
+
+        $this->createNotificationAndDispatch(
+            mailable: $mailable,
+            recipientEmail: $company->effective_billing_email,
+            type: 'paddle_usage_charge_receipt',
+            subject: $mailable->envelope()->subject,
+            body: "Usage charge of " . DealTerms::money($invoice->amount) . " ({$invoice->usage_minutes} min) confirmed to {$company->effective_billing_email} for {$company->name} (invoice {$invoice->invoice_number}).",
+            companyId: $company->id,
+            data: [
+                'invoice_id' => $invoice->id,
+                'subscription_id' => $subscription->id,
             ]
         );
     }
@@ -351,6 +428,81 @@ class EmailService
     }
 
     // ──────────────────────────────────────────────
+    // Deal emails — customer-facing (Paddle deals; the recipient is the deal's own
+    // email, since no Company/billing email exists yet before payment)
+    // ──────────────────────────────────────────────
+
+    /** The secure checkout link + a plain-language summary of what they're agreeing to. */
+    public function sendDealCheckoutLink(Deal $deal): void
+    {
+        $mailable = new DealCheckoutLinkMail($deal);
+
+        $this->createNotificationAndDispatch(
+            mailable: $mailable,
+            recipientEmail: $deal->email,
+            type: 'deal_checkout_link',
+            subject: $mailable->envelope()->subject,
+            body: "Checkout link for {$deal->business_name} sent to {$deal->email} — " . DealTerms::summary($deal) . '.',
+            companyId: $deal->company_id,
+            data: ['deal_id' => $deal->id]
+        );
+
+        $deal->forceFill(['link_emailed_at' => now()])->save();
+    }
+
+    /** "Payment received — here's what happens next", with Paddle's confirmed first-charge date. */
+    public function sendDealPaid(Deal $deal, bool $invited = true): void
+    {
+        $mailable = new DealPaidMail($deal, $invited);
+
+        $this->createNotificationAndDispatch(
+            mailable: $mailable,
+            recipientEmail: $deal->email,
+            type: 'deal_paid',
+            subject: $mailable->envelope()->subject,
+            body: "Payment confirmation and next steps sent to {$deal->email} for {$deal->business_name}.",
+            companyId: $deal->company_id,
+            data: ['deal_id' => $deal->id]
+        );
+    }
+
+    /** Reminder that a Paddle trial's first charge is coming (see paddle:send-trial-reminders). */
+    public function sendDealTrialEnding(Deal $deal): void
+    {
+        $mailable = new DealTrialEndingMail($deal);
+
+        $this->createNotificationAndDispatch(
+            mailable: $mailable,
+            recipientEmail: $deal->email,
+            type: 'deal_trial_ending',
+            subject: $mailable->envelope()->subject,
+            body: "Trial ending reminder for {$deal->business_name}: first charge " . BillingTime::date($deal->nextChargeAt()) . '.',
+            companyId: $deal->company_id,
+            data: ['deal_id' => $deal->id, 'charge_at' => $deal->nextChargeAt()?->toIso8601String()]
+        );
+    }
+
+    /**
+     * A change to a deal's billing the customer must be told about.
+     *
+     * @param string $kind one of DealBillingUpdateMail::KINDS
+     */
+    public function sendDealBillingUpdate(Deal $deal, string $kind, ?Carbon $previousChargeAt = null): void
+    {
+        $mailable = new DealBillingUpdateMail($deal, $kind, $previousChargeAt);
+
+        $this->createNotificationAndDispatch(
+            mailable: $mailable,
+            recipientEmail: $deal->email,
+            type: "deal_{$kind}",
+            subject: $mailable->envelope()->subject,
+            body: "Billing update ({$kind}) sent to {$deal->email} for {$deal->business_name}.",
+            companyId: $deal->company_id,
+            data: ['deal_id' => $deal->id]
+        );
+    }
+
+    // ──────────────────────────────────────────────
     // Admin Notification Emails
     // ──────────────────────────────────────────────
 
@@ -359,36 +511,104 @@ class EmailService
         $receipt->load(['invoice.company']);
         $company = $receipt->invoice->company;
 
-        $this->createNotificationAndDispatch(
-            mailable: new NewReceiptUploadedMail($receipt),
-            recipientEmail: $this->getAdminEmail(),
-            type: 'new_receipt_uploaded',
-            subject: "New Receipt: {$company->name} — Invoice {$receipt->invoice->invoice_number}",
-            body: "{$company->name} uploaded a payment receipt for invoice {$receipt->invoice->invoice_number}.",
-            companyId: $company->id,
-            data: [
-                'receipt_id' => $receipt->id,
-                'invoice_id' => $receipt->invoice_id,
-            ]
-        );
+        foreach ($this->adminRecipients() as $adminEmail) {
+            $this->createNotificationAndDispatch(
+                mailable: new NewReceiptUploadedMail($receipt),
+                recipientEmail: $adminEmail,
+                type: 'new_receipt_uploaded',
+                subject: "New Receipt: {$company->name} — Invoice {$receipt->invoice->invoice_number}",
+                body: "{$company->name} uploaded a payment receipt for invoice {$receipt->invoice->invoice_number}.",
+                companyId: $company->id,
+                data: [
+                    'receipt_id' => $receipt->id,
+                    'invoice_id' => $receipt->invoice_id,
+                ]
+            );
+        }
     }
 
     public function sendUsageAlert(Subscription $subscription): void
     {
         $subscription->load(['company', 'agent', 'plan']);
 
-        $this->createNotificationAndDispatch(
-            mailable: new UsageAlertMail($subscription),
-            recipientEmail: $this->getAdminEmail(),
-            type: 'usage_alert',
-            subject: "Usage Alert: {$subscription->agent->name} — {$subscription->company->name}",
-            body: "Agent {$subscription->agent->name} has triggered the circuit breaker ({$subscription->minutes_used} minutes used).",
-            companyId: $subscription->company_id,
-            data: [
-                'subscription_id' => $subscription->id,
-                'agent_id' => $subscription->agent_id,
-            ]
-        );
+        foreach ($this->adminRecipients() as $adminEmail) {
+            $this->createNotificationAndDispatch(
+                mailable: new UsageAlertMail($subscription),
+                recipientEmail: $adminEmail,
+                type: 'usage_alert',
+                subject: "Usage Alert: {$subscription->agent->name} — {$subscription->company->name}",
+                body: "Agent {$subscription->agent->name} has triggered the circuit breaker ({$subscription->minutes_used} minutes used).",
+                companyId: $subscription->company_id,
+                data: [
+                    'subscription_id' => $subscription->id,
+                    'agent_id' => $subscription->agent_id,
+                ]
+            );
+        }
+    }
+
+    /**
+     * The one admin-facing "something happened, here's the next step" email (see
+     * AdminAlertMail). Goes to every admin recipient — plus $alsoNotify, e.g. the closer
+     * who owns the deal — one Notification row each, so Admin → Emails shows exactly who
+     * was told what.
+     *
+     * @param array<string, string> $facts label => value
+     * @param string $tone info | success | warning | danger
+     * @param array<int, string> $alsoNotify extra recipient emails
+     */
+    public function notifyAdmins(
+        string $type,
+        string $subject,
+        string $headline,
+        string $intro,
+        array $facts = [],
+        ?string $ctaUrl = null,
+        ?string $ctaLabel = null,
+        string $tone = 'info',
+        ?Deal $deal = null,
+        array $alsoNotify = []
+    ): void {
+        foreach ($this->adminRecipients($alsoNotify) as $email) {
+            $this->createNotificationAndDispatch(
+                mailable: new AdminAlertMail($subject, $headline, $intro, $facts, $ctaUrl, $ctaLabel, $tone),
+                recipientEmail: $email,
+                type: $type,
+                subject: $subject,
+                body: $intro,
+                companyId: $deal?->company_id,
+                data: $deal ? ['deal_id' => $deal->id] : []
+            );
+        }
+    }
+
+    /**
+     * Who counts as "the admin" for notifications: the addresses configured in Settings
+     * (comma-separated), otherwise every active admin user, and only as a last resort the
+     * mail from-address. (Before this, admin emails silently went to MAIL_FROM_ADDRESS —
+     * fine while that happened to be the admin's inbox, a black hole otherwise.)
+     *
+     * @param array<int, string> $extra additional recipients merged in (deduplicated)
+     * @return array<int, string>
+     */
+    public function adminRecipients(array $extra = []): array
+    {
+        $emails = collect(preg_split('/[\s,;]+/', (string) SystemSetting::getValue('admin_notification_email', ''), -1, PREG_SPLIT_NO_EMPTY));
+
+        if ($emails->isEmpty()) {
+            $emails = User::where('role', 'admin')->where('status', 'active')->pluck('email');
+        }
+
+        if ($emails->isEmpty() && config('mail.from.address')) {
+            $emails = collect([config('mail.from.address')]);
+        }
+
+        return $emails->merge($extra)
+            ->map(fn ($email) => strtolower(trim((string) $email)))
+            ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     // ──────────────────────────────────────────────
@@ -416,13 +636,5 @@ class EmailService
         ]);
 
         SendEmailJob::dispatch($mailable, $recipientEmail, $notification->id);
-    }
-
-    protected function getAdminEmail(): string
-    {
-        return SystemSetting::getValue(
-            'admin_notification_email',
-            config('mail.from.address')
-        );
     }
 }

@@ -74,6 +74,16 @@
                             @enderror
                         </div>
                     @endisset
+
+                    <div class="col-md-12">
+                        <label class="form-check form-switch">
+                            <input type="hidden" name="is_demo" value="0">
+                            <input type="checkbox" name="is_demo" value="1" class="form-check-input"
+                                   {{ old('is_demo', $company->is_demo ?? false) ? 'checked' : '' }}>
+                            <span class="form-check-label">Demo customer</span>
+                        </label>
+                        <div class="form-hint">Purely for demos (a sales prospect, or a closer/manager's example) &mdash; fully excluded from automated billing: no renewal, usage, overdue or reconcile processing, and no billing emails, even if it has a real Paddle subscription. Deliberate admin actions on its deals (Start billing now, Cancel, etc.) still work normally.</div>
+                    </div>
                 </div>
             </div>
         </div>

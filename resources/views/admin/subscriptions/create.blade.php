@@ -40,11 +40,17 @@
                             <select name="agent_id" id="agentSelect" class="form-select @error('agent_id') is-invalid @enderror" required>
                                 <option value="">Select Assistant</option>
                                 @foreach($agents as $agent)
-                                    @php $deal = ($agent->deal && !$agent->deal->isClaimed()) ? $agent->deal : null; @endphp
+                                    {{-- The paid deal that funds this assistant: its own, or the retainer deal created from a setup-only one --}}
+                                    @php
+                                        $deal = $agent->deal?->fundingDeal();
+                                        $awaitingRetainer = !$deal && $agent->deal?->isSetupOnly();
+                                    @endphp
                                     <option value="{{ $agent->id }}" data-company="{{ $agent->company_id }}" {{ old('agent_id', request('agent_id')) == $agent->id ? 'selected' : '' }}>
                                         {{ $agent->name }} {{ $agent->phone_number ? "({$agent->phone_number})" : '' }}
                                         @if($deal)
                                             — Deal: ${{ number_format($deal->agreed_monthly_price, 2) }}/mo{{ $deal->is_trial ? ", {$deal->trial_days}-day trial" : ', paid via Paddle' }}
+                                        @elseif($awaitingRetainer)
+                                            — setup-only deal, monthly retainer not paid yet
                                         @endif
                                     </option>
                                 @endforeach
@@ -53,7 +59,13 @@
                             @error('agent_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            @if($agents->contains(fn($a) => $a->deal && !$a->deal->isClaimed()))
+                            @if($agents->contains(fn($a) => $a->deal?->isSetupOnly() && !$a->deal->fundingDeal()))
+                                <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small">
+                                    Assistants marked "setup-only deal" can't be given a subscription yet — there is no agreed,
+                                    paid monthly retainer to bill it against. Add the monthly retainer on that deal first.
+                                </div>
+                            @endif
+                            @if($agents->contains(fn($a) => $a->deal?->fundingDeal()))
                                 <div class="alert alert-info mt-2 mb-0 py-2 px-3 small">
                                     Assistants marked "Deal:" were created from an unclaimed paid Paddle deal —
                                     price and trial length will be taken from that deal automatically, overriding

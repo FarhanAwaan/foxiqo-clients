@@ -7,10 +7,11 @@ use App\Exceptions\SubscriptionHasPaidInvoiceException;
 use App\Models\Agent;
 use App\Models\AuditLog;
 use App\Models\Company;
-use App\Models\Deal;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Services\PaddleLifecycleService;
 use App\Services\SubscriptionService;
+use App\Support\BillingTime;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +19,8 @@ use Illuminate\Http\RedirectResponse;
 class SubscriptionController extends Controller
 {
     public function __construct(
-        protected SubscriptionService $subscriptionService
+        protected SubscriptionService $subscriptionService,
+        protected PaddleLifecycleService $lifecycle
     ) {}
 
     public function index(Request $request): View
@@ -66,55 +68,60 @@ class SubscriptionController extends Controller
 
         $agent = Agent::findOrFail($validated['agent_id']);
         $plan = Plan::findOrFail($validated['plan_id']);
-        $isTrial = !empty($validated['is_trial']);
-        $trialDays = (int) ($validated['trial_days'] ?? 30);
-        $customPrice = $validated['custom_price'] ?? null;
-        $alreadyPaid = null;
-        $paddleSubscriptionId = null;
 
-        // A Paddle deal already committed to specific terms for this customer — the
-        // portal's invoicing MUST match what Paddle actually charges, so this
-        // overrides whatever was submitted rather than trusting it. Matched via the
-        // Agent's own deal_id (set when it was created from a Deal's "Add Assistant"
-        // link), not by company alone — a company can have more than one unclaimed
-        // deal at once, which company-wide matching can't disambiguate.
-        $deal = $agent->deal && !$agent->deal->isClaimed() ? $agent->deal : null;
+        // A Paddle deal already committed to specific terms for this customer — the portal's
+        // invoicing MUST match what Paddle actually charges, so those terms win over whatever
+        // was submitted. The agent's own deal_id (set by "Add Assistant" on a deal) finds it: the
+        // deal itself, or — for a setup-only deal — the paid retainer deal created from it.
+        $deal = $agent->deal?->fundingDeal();
+
+        if (!$deal && $agent->deal?->isSetupOnly()) {
+            return back()->withInput()->with('error',
+                "This assistant came from the setup-only deal \"{$agent->deal->business_name}\", which has no paid monthly retainer yet — "
+                . 'there is nothing to bill a subscription against. Add the monthly retainer on that deal first, and once it is paid it will fund this subscription.'
+            );
+        }
 
         if ($deal) {
-            $customPrice = (float) $deal->agreed_monthly_price;
-            $isTrial = $deal->is_trial;
-            $trialDays = $deal->trial_days ?? 30;
-            $paddleSubscriptionId = $deal->paddle_subscription_id;
-
-            // Non-trial: Paddle already collected the first month + activation at
-            // checkout. Trial: only activation was collected — Paddle's own trial
-            // clock (not this app's) governs when the first real charge happens,
-            // reconciled later by the renewal webhook, so no invoice is created now.
-            if (!$isTrial) {
-                $alreadyPaid = ['provider' => 'paddle', 'transaction_id' => $deal->paddle_transaction_id];
+            try {
+                // The webhook normally filled in Paddle's dates already; if it hasn't (or missed),
+                // read them from Paddle now — a subscription built on guessed dates could charge
+                // on a different day than the portal says.
+                if ($deal->paddle_subscription_id && $deal->paddle_status === null) {
+                    $this->lifecycle->refreshDeal($deal);
+                    $deal->refresh();
+                }
+            } catch (\Throwable $e) {
+                report($e);
             }
+
+            try {
+                $subscription = $this->subscriptionService->createFromDeal($agent, $plan, $deal);
+            } catch (\InvalidArgumentException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+
+            $price = number_format((float) $deal->agreed_monthly_price, 2);
+
+            $message = $deal->isTrialing()
+                ? "Subscription created from deal \"{$deal->business_name}\" — free trial until " . BillingTime::dateTime($deal->trial_ends_at) . ". Paddle then charges \${$price}/mo automatically and the invoice reconciles here on its own."
+                : "Subscription created from deal \"{$deal->business_name}\" — \${$price}/mo, billed by Paddle. Its billing periods follow Paddle's, so nothing needs invoicing by hand.";
+        } else {
+            $isTrial = !empty($validated['is_trial']);
+            $trialDays = (int) ($validated['trial_days'] ?? 30);
+
+            $subscription = $this->subscriptionService->create(
+                $agent,
+                $plan,
+                $validated['custom_price'] ?? null,
+                $isTrial,
+                $trialDays
+            );
+
+            $message = $isTrial
+                ? "Free trial started. The assistant is now active for {$trialDays} days. A trial welcome email has been sent."
+                : 'Subscription created. Invoice and payment link have been sent to the customer.';
         }
-
-        $subscription = $this->subscriptionService->create(
-            $agent,
-            $plan,
-            $customPrice,
-            $isTrial,
-            $trialDays,
-            $alreadyPaid,
-            $paddleSubscriptionId
-        );
-
-        if ($deal) {
-            $deal->update(['subscription_id' => $subscription->id]);
-        }
-
-        $message = match (true) {
-            $deal && $isTrial => "Subscription created from Deal \"{$deal->business_name}\" — {$trialDays}-day Paddle trial, \${$customPrice}/mo after. Activation was already collected; the monthly charge and this subscription's invoice will reconcile automatically when Paddle bills it.",
-            $deal => "Subscription created from Deal \"{$deal->business_name}\" — \${$customPrice}/mo, already paid via Paddle. No further action needed for this period.",
-            $isTrial => "Free trial started. The assistant is now active for {$trialDays} days. A trial welcome email has been sent.",
-            default => 'Subscription created. Invoice and payment link have been sent to the customer.',
-        };
 
         return redirect()->route('admin.subscriptions.show', $subscription)
             ->with('success', $message);
@@ -155,10 +162,24 @@ class SubscriptionController extends Controller
             'custom_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $note = '';
+
+        // The retainer of a Paddle-managed subscription is what Paddle charges (the deal's price).
+        // Changing it here would make the portal's invoices disagree with the card charges, so the
+        // price is kept; the plan can still change (included minutes, per-minute rate).
+        if ($subscription->isPaddleManaged()) {
+            if ((string) ($validated['custom_price'] ?? '') !== (string) $subscription->custom_price
+                && (float) ($validated['custom_price'] ?? 0) !== (float) $subscription->custom_price) {
+                $note = ' The monthly price stays $' . number_format((float) $subscription->custom_price, 2) . ' because Paddle bills it — change it by creating a new deal.';
+            }
+
+            $validated['custom_price'] = $subscription->custom_price;
+        }
+
         $subscription->update($validated);
 
         return redirect()->route('admin.subscriptions.show', $subscription)
-            ->with('success', 'Subscription updated successfully.');
+            ->with('success', 'Subscription updated successfully.' . $note);
     }
 
     public function destroy(Subscription $subscription): RedirectResponse
@@ -192,6 +213,23 @@ class SubscriptionController extends Controller
         }
 
         $reason = $request->input('reason');
+
+        // A Paddle-managed subscription must be cancelled IN PADDLE — cancelling only the portal
+        // record would leave Paddle charging the customer's card every month. Cancelling there
+        // cancels the portal subscription too (PaddleLifecycleService::syncSubscription), voids its
+        // unpaid invoices, deactivates the assistant and emails the customer.
+        $deal = $subscription->isPaddleManaged() ? $subscription->deal : null;
+
+        if ($deal && $deal->paddle_status !== 'canceled') {
+            try {
+                $this->lifecycle->cancelSubscription($deal, immediately: true, reason: $reason);
+
+                return redirect()->route('admin.subscriptions.show', $subscription)
+                    ->with('success', 'Subscription cancelled in Paddle and here — nothing further will be charged, and the customer has been emailed.');
+            } catch (\InvalidArgumentException|\App\Exceptions\PaddleApiException $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
 
         // Check if cancellation is allowed
         $cancelCheck = $this->subscriptionService->canCancel($subscription);

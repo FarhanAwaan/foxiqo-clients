@@ -49,6 +49,26 @@
         </div>
     @endif
 
+    @if($overdueCharges->isNotEmpty())
+        {{-- A Paddle charge date that passed with nothing charged or recorded — see PaddleLifecycleService::flagOverdueCharge --}}
+        <div class="alert alert-danger mb-4" role="alert">
+            <h4 class="alert-title">{{ $overdueCharges->count() }} Paddle {{ \Illuminate\Support\Str::plural('charge', $overdueCharges->count()) }} overdue</h4>
+            <div class="text-secondary">
+                Paddle's charge date passed more than {{ \App\Models\Deal::chargeOverdueGraceHours() }} hours ago with no charge recorded — Paddle hasn't billed it
+                or the payment keeps failing. Nothing has been paused. Open the deal to look into it; <strong>Sync with Paddle</strong> there re-checks once it's sorted.
+            </div>
+            <ul class="mt-2 mb-0">
+                @foreach($overdueCharges as $overdueDeal)
+                    <li>
+                        <a href="{{ route('deals.show', $overdueDeal) }}"><strong>{{ $overdueDeal->business_name }}</strong></a>
+                        &mdash; {{ \App\Support\DealTerms::money($overdueDeal->agreed_monthly_price) }}/mo, was due {{ \App\Support\BillingTime::dateTime($overdueDeal->next_billed_at) }}
+                        <span class="text-secondary">&middot; Paddle: {{ $overdueDeal->paddle_status_label }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Summary Stats -->
     <div class="row row-deck row-cards mb-4">
         <div class="col-sm-6 col-lg-2">
@@ -158,9 +178,13 @@
                                 <td>
                                     @if($row->has_overdue)
                                         <span class="badge bg-red-lt">Overdue</span>
-                                    @else
-                                        <span class="badge bg-green-lt">Current</span>
                                     @endif
+                                    @if($row->charge_overdue)
+                                        <span class="badge bg-orange-lt" title="Paddle's charge date passed with no charge recorded">Charge overdue</span>
+                                    @endif
+                                    @unless($row->has_overdue || $row->charge_overdue)
+                                        <span class="badge bg-green-lt">Current</span>
+                                    @endunless
                                 </td>
                             </tr>
                         @empty

@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\PaymentLink;
 use App\Models\Subscription;
 use App\Models\SystemSetting;
+use App\Support\BillingTime;
 use App\Events\PaymentReceived;
 use App\Exceptions\InvoiceAlreadyPaidException;
 use Carbon\Carbon;
@@ -18,13 +19,17 @@ class InvoiceService
         protected EmailService $emailService
     ) {}
 
-    public function createForSubscription(Subscription $subscription): Invoice
+    /**
+     * The invoice for the subscription's current period — or for an explicit one, which is for a
+     * Paddle charge that belongs to an earlier period than the one the subscription is now in.
+     */
+    public function createForSubscription(Subscription $subscription, ?Carbon $periodStart = null, ?Carbon $periodEnd = null): Invoice
     {
         $amount = $subscription->getEffectivePrice();
         $dueDays = SystemSetting::getValue('invoice_due_days', 7);
 
-        $periodStart = $subscription->current_period_start ?? Carbon::today();
-        $periodEnd = $subscription->current_period_end ?? Carbon::today()->addDays(30);
+        $periodStart ??= $subscription->current_period_start ?? Carbon::today();
+        $periodEnd ??= $subscription->current_period_end ?? Carbon::today()->addDays(30);
 
         $invoice = Invoice::create([
             'invoice_number' => $this->generateInvoiceNumber(),
@@ -73,36 +78,66 @@ class InvoiceService
     }
 
     /**
-     * Record a one-off Paddle charge that isn't tied to a subscription period —
-     * currently just the deal's one-time activation fee, created the moment
-     * Paddle confirms the transaction (before any Agent/Subscription exists to
-     * attach a normal invoice to). A point-in-time charge, so billing_period is
-     * just today rather than a real range.
+     * Record a Paddle charge that isn't attached to a Subscription — the deal's one-time
+     * activation fee (created the moment Paddle confirms the transaction, before any
+     * Agent/Subscription exists), or a retainer charge that lands before an assistant is
+     * attached to the deal. Tied to the deal (deal_id) so it can be listed there and
+     * adopted by the Subscription later. A point-in-time charge unless a real billing
+     * period is given.
      */
     public function createStandaloneInvoice(
         int $companyId,
         string $invoiceType,
         float $amount,
         string $paddleTransactionId,
-        ?string $paddleStatus = null
+        ?string $paddleStatus = null,
+        ?int $dealId = null,
+        ?Carbon $periodStart = null,
+        ?Carbon $periodEnd = null,
+        ?array $paddleTotals = null
     ): Invoice {
+        // "Today" is the business day the customer was charged, not the server's (see BillingTime::businessDay).
+        $periodStart ??= BillingTime::businessDay(now());
+        $periodEnd ??= $periodStart->copy();
+
         $invoice = Invoice::create([
             'invoice_number' => $this->generateInvoiceNumber(),
             'subscription_id' => null,
+            'deal_id' => $dealId,
             'company_id' => $companyId,
             'invoice_type' => $invoiceType,
             'amount' => $amount,
             'status' => 'draft',
-            'billing_period_start' => Carbon::today(),
-            'billing_period_end' => Carbon::today(),
-            'due_date' => Carbon::today(),
+            'billing_period_start' => $periodStart,
+            'billing_period_end' => $periodEnd,
+            'due_date' => BillingTime::businessDay(now()),
             'paddle_transaction_id' => $paddleTransactionId,
             'paddle_status' => $paddleStatus,
+            'paddle_charged_amount' => $paddleTotals['charged'] ?? null,
+            'paddle_tax_amount' => $paddleTotals['tax'] ?? null,
+            'paddle_fee_amount' => $paddleTotals['fee'] ?? null,
         ]);
 
         $this->auditService->log('invoice_created', $invoice);
 
         return $invoice;
+    }
+
+    /**
+     * Record what Paddle's transaction actually shows as charged/taxed/kept-as-fee against an
+     * invoice already settled by it — the reconciliation figures alongside our own `amount`
+     * (App\Support\PaddleMoney::fromTransactionTotals()). Never touches `amount` itself: that stays
+     * the agreed price revenue reporting already reads.
+     *
+     * @param array{charged: ?float, tax: ?float, fee: ?float} $totals
+     */
+    public function recordPaddleTotals(Invoice $invoice, array $totals): void
+    {
+        $invoice->update([
+            'paddle_charged_amount' => $totals['charged'] ?? null,
+            'paddle_tax_amount' => $totals['tax'] ?? null,
+            'paddle_fee_amount' => $totals['fee'] ?? null,
+        ]);
     }
 
     /**
@@ -237,7 +272,8 @@ class InvoiceService
         return !in_array($invoice->status, ['paid', 'voided']);
     }
 
-    protected function generateInvoiceNumber(): string
+    /** Exposed for the rare case a caller builds an Invoice row itself rather than through one of the create*() methods above (see PaddleLifecycleService::applyUsageCharge()'s unmatched-charge fallback). */
+    public function generateInvoiceNumber(): string
     {
         $year = date('Y');
         $month = date('m');

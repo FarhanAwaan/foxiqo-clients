@@ -64,7 +64,20 @@
                                 @error('company_email')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-hint">Primary contact email for customer support</div>
+                                <div class="form-hint">Primary contact email for customer support. Customers' replies to deal emails come here.</div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label" for="admin_notification_email">Admin Notification Email(s)</label>
+                                <input type="text"
+                                       name="admin_notification_email"
+                                       id="admin_notification_email"
+                                       class="form-control @error('admin_notification_email') is-invalid @enderror"
+                                       value="{{ old('admin_notification_email', $settings['admin_notification_email']) }}"
+                                       placeholder="Leave blank to notify every admin user">
+                                @error('admin_notification_email')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-hint">Where "deal created / deal paid / trial ending / payment failed" alerts go. Separate several addresses with commas. Blank = every active admin user.</div>
                             </div>
                         </div>
                     </div>
