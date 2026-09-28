@@ -1313,14 +1313,77 @@ class PaddleLifecycleService
     }
 
     /**
+     * Paddle gives up retrying a webhook delivery after a few attempts and just leaves it
+     * "failed" — nothing else would ever notice if the endpoint itself breaks (wrong signing
+     * secret, DNS, a deploy that 500s the route), which is exactly what happened undetected
+     * until a human checked Paddle's own dashboard by hand (see PROJECT.md, 2026-09-29
+     * incident). `paddle:reconcile` papers over the worst of it for payments/subscriptions, but
+     * has no equivalent for refunds/chargebacks (`adjustment.*` is webhook-only) — those would
+     * silently never appear here at all while delivery stays broken.
+     *
+     * One email per distinct failed delivery, not per reconcile run: Cache remembers which
+     * notification ids already triggered an alert, so a delivery stuck in "failed" doesn't
+     * re-page every 15 minutes forever.
+     *
+     * @return int how many newly-seen failed deliveries triggered this alert
+     */
+    protected function alertOnFailedWebhookDeliveries(): int
+    {
+        $recent = collect($this->paddle->listFailedNotifications())
+            ->filter(fn (array $n) => ($n['status'] ?? null) === 'failed')
+            ->filter(fn (array $n) => isset($n['occurred_at']) && Carbon::parse($n['occurred_at'])->gt(now()->subHours(2)));
+
+        $unseen = $recent->reject(fn (array $n) => Cache::has("paddle_failed_delivery_alerted:{$n['id']}"));
+
+        if ($unseen->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($unseen as $n) {
+            Cache::put("paddle_failed_delivery_alerted:{$n['id']}", true, now()->addDay());
+        }
+
+        $eventTypes = $unseen->pluck('type')->filter()->unique()->values();
+
+        $this->auditService->logAction('paddle_webhook_delivery_failed', null, [
+            'count' => $unseen->count(),
+            'event_types' => $eventTypes->all(),
+            'notification_ids' => $unseen->pluck('id')->values()->all(),
+        ]);
+
+        $this->emailService->notifyAdmins(
+            type: 'admin_webhook_delivery_failed',
+            subject: 'Paddle webhooks are failing to deliver',
+            headline: "Paddle could not deliver {$unseen->count()} recent webhook event(s)",
+            intro: "Paddle attempted to call this portal's webhook endpoint and every attempt failed — usually a wrong signing secret, the endpoint being unreachable, or the route erroring. paddle:reconcile fills in payments and subscription status on its own 15-minute poll regardless, but refunds and chargebacks have no such fallback and will silently never appear here until this is fixed. Check the notification destination in Paddle's dashboard (Developer Tools → Notifications → delivery logs) against this portal's Paddle Webhook Secret setting.",
+            facts: [
+                'Failed events' => (string) $unseen->count(),
+                'Event types' => $eventTypes->implode(', '),
+            ],
+            tone: 'danger'
+        );
+
+        return $unseen->count();
+    }
+
+    /**
      * The safety net: ask Paddle what actually happened and apply anything the webhooks didn't
      * deliver. Every step is the same idempotent code the webhooks use.
      *
-     * @return array{deals_paid: int, synced: int, charges: int, overdue: int, errors: int}
+     * @return array{deals_paid: int, synced: int, charges: int, overdue: int, failed_deliveries: int, errors: int}
      */
     public function reconcile(): array
     {
-        $stats = ['deals_paid' => 0, 'synced' => 0, 'charges' => 0, 'overdue' => 0, 'errors' => 0];
+        $stats = ['deals_paid' => 0, 'synced' => 0, 'charges' => 0, 'overdue' => 0, 'failed_deliveries' => 0, 'errors' => 0];
+
+        // Deliberately first and isolated: this checks whether the webhook PIPE itself is
+        // healthy, which is a different question from "did we process every deal below" — a
+        // bug in this check should never stop the rest of reconcile from running.
+        try {
+            $stats['failed_deliveries'] = $this->alertOnFailedWebhookDeliveries();
+        } catch (\Throwable $e) {
+            Log::warning("paddle:reconcile — webhook health check failed: {$e->getMessage()}");
+        }
 
         // Unpaid deals whose transaction Paddle may have completed (a missed transaction.completed
         // webhook would otherwise leave a paying customer unprovisioned), plus every live subscription.

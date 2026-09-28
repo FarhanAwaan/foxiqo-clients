@@ -207,6 +207,27 @@ class PaddleService
     }
 
     // ──────────────────────────────────────────────
+    // Notifications — webhook delivery health
+    // ──────────────────────────────────────────────
+
+    /**
+     * The most recent webhook deliveries Paddle gave up retrying (any destination, any event
+     * type), newest first. This is a DELIVERY problem (wrong signing secret, endpoint down, a
+     * deploy that 500s the route) — distinct from an event's own content failing to process,
+     * which never shows up here. `status: 'failed'` is passed as a query hint, but the caller
+     * should still filter the result defensively: undocumented whether Paddle honors it server
+     * side, and trusting an unverified filter silently is how the 2026-09-29 incident would have
+     * kept slipping past this exact check.
+     */
+    public function listFailedNotifications(int $limit = 50): array
+    {
+        return $this->request('GET', '/notifications', [
+            'status' => 'failed',
+            'per_page' => $limit,
+        ], 'Failed to list Paddle notifications')['data'] ?? [];
+    }
+
+    // ──────────────────────────────────────────────
     // Subscriptions — read + the admin lifecycle actions
     // ──────────────────────────────────────────────
 
