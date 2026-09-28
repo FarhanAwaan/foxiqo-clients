@@ -4,13 +4,23 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Models\Appointment;
+use App\Models\BillingCycle;
+use App\Models\CalendarConnection;
 use App\Models\CallLog;
 use App\Models\Company;
 use App\Models\Deal;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\PaymentLink;
+use App\Models\PaymentReceipt;
+use App\Models\Subscription;
 use App\Services\AuditService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -118,6 +128,7 @@ class AgentController extends Controller
             'companyUrl' => route('admin.companies.show', $agent->company),
             'subscriptionUrl' => $agent->subscription ? route('admin.subscriptions.show', $agent->subscription) : null,
             'createSubscriptionUrl' => route('admin.subscriptions.create', ['agent_id' => $agent->id, 'company_id' => $agent->company_id]),
+            'deletionSummary' => $this->deletionSummary($agent, $agent->subscription),
         ];
 
         return view('admin.agents.show', compact('agent', 'callLogs', 'totalCalls', 'totalMinutes', 'avgDuration', 'inboundCalls', 'outboundCalls', 'upcomingAppointments') + $viewData);
@@ -154,18 +165,106 @@ class AgentController extends Controller
             ->with('success', 'Agent updated successfully.');
     }
 
-    public function destroy(Agent $agent): RedirectResponse
+    /**
+     * Permanently delete an assistant and every record tied to it (subscription,
+     * invoices/payments/receipts, call logs, appointments, calendar connection,
+     * billing history, staff access grants). Requires the admin to type the
+     * assistant's exact name — enforced here too, not just in the confirmation
+     * modal's JS, since this is irreversible.
+     *
+     * A Paddle-managed subscription that isn't already cancelled/expired blocks
+     * the delete: Paddle would otherwise keep charging the card for a subscription
+     * the portal no longer has any record of. Cancel it first (that flow cancels
+     * the Paddle side too), then delete.
+     *
+     * This never touches Retell itself — the agent (and its phone number) stays
+     * live there until it's removed in Retell's own console.
+     */
+    public function destroy(Request $request, Agent $agent): RedirectResponse
     {
-        if ($agent->subscription) {
-            return back()->with('error', 'Cannot delete agent with active subscription.');
+        $agent->load('subscription', 'company');
+        $subscription = $agent->subscription;
+
+        if ($subscription && $subscription->isPaddleManaged() && !in_array($subscription->status, ['cancelled', 'expired'], true)) {
+            return back()->with('error', "This assistant's subscription is Paddle-managed and still {$subscription->status} — Paddle is still billing the card. Cancel the subscription first (from its page, which cancels it in Paddle too), then delete the assistant.");
         }
 
-        $this->auditService->log('agent_deleted', $agent);
+        if (trim((string) $request->input('confirm_name')) !== $agent->name) {
+            return back()->with('error', "Type the assistant's exact name to confirm deletion.");
+        }
 
-        $agent->delete();
+        $summary = $this->deletionSummary($agent, $subscription);
+        $agentName = $agent->name;
+        $companyName = $agent->company->name;
 
-        return redirect()->route('admin.agents.index')
-            ->with('success', 'Agent deleted successfully.');
+        DB::transaction(function () use ($agent, $subscription, $summary, $companyName) {
+            $invoiceIds = $subscription
+                ? Invoice::where('subscription_id', $subscription->id)->pluck('id')
+                : collect();
+
+            // Receipt files live on disk, not just in the DB — clean those up first.
+            $receiptFiles = PaymentReceipt::whereIn('invoice_id', $invoiceIds)->pluck('file_path');
+            foreach ($receiptFiles as $path) {
+                if ($path && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            PaymentReceipt::whereIn('invoice_id', $invoiceIds)->delete();
+            Payment::whereIn('invoice_id', $invoiceIds)->delete();
+            PaymentLink::whereIn('invoice_id', $invoiceIds)->delete();
+            Invoice::whereIn('id', $invoiceIds)->delete();
+
+            BillingCycle::where('agent_id', $agent->id)->delete();
+            Appointment::where('agent_id', $agent->id)->delete();
+            CallLog::where('agent_id', $agent->id)->delete();
+            CalendarConnection::where('agent_id', $agent->id)->delete();
+            DB::table('agent_user_access')->where('agent_id', $agent->id)->delete();
+
+            // Nulls deals.subscription_id automatically if a paid Deal funded this
+            // subscription — the deal itself (the sales/payment record) is untouched.
+            $subscription?->delete();
+
+            $this->auditService->log('agent_deleted', $agent, [
+                'company' => $companyName,
+                'retell_agent_id' => $agent->retell_agent_id,
+                'deleted_counts' => $summary,
+            ]);
+
+            $agent->delete();
+        });
+
+        return redirect()->route('admin.agents.index')->with('success',
+            "Deleted \"{$agentName}\" ({$companyName}) — {$summary['call_logs']} call log(s), {$summary['invoices']} invoice(s), {$summary['appointments']} appointment(s) and everything else tied to it were permanently removed."
+        );
+    }
+
+    /**
+     * Counts of everything a delete would remove, for the confirmation modal and
+     * the audit-log snapshot. `paddle_blocked` mirrors the guard in destroy().
+     */
+    private function deletionSummary(Agent $agent, ?Subscription $subscription): array
+    {
+        $invoiceIds = $subscription
+            ? Invoice::where('subscription_id', $subscription->id)->pluck('id')
+            : collect();
+
+        return [
+            'call_logs' => $agent->callLogs()->count(),
+            'appointments' => $agent->appointments()->count(),
+            'has_subscription' => (bool) $subscription,
+            'paddle_managed' => $subscription?->isPaddleManaged() ?? false,
+            'paddle_blocked' => $subscription
+                ? ($subscription->isPaddleManaged() && !in_array($subscription->status, ['cancelled', 'expired'], true))
+                : false,
+            'invoices' => $invoiceIds->count(),
+            'payments' => Payment::whereIn('invoice_id', $invoiceIds)->count(),
+            'payment_links' => PaymentLink::whereIn('invoice_id', $invoiceIds)->count(),
+            'payment_receipts' => PaymentReceipt::whereIn('invoice_id', $invoiceIds)->count(),
+            'billing_cycles' => BillingCycle::where('agent_id', $agent->id)->count(),
+            'has_calendar_connection' => (bool) $agent->calendarConnection,
+            'access_grants' => DB::table('agent_user_access')->where('agent_id', $agent->id)->count(),
+        ];
     }
 
     // ── AJAX: Call Volume for this agent ──────────────────────────────

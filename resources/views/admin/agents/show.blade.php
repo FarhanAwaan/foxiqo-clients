@@ -24,4 +24,5 @@
 
 @section('content')
     @include('agents._show')
+    @include('admin.agents._danger_zone')
 @endsection
