@@ -84,14 +84,17 @@ class SandboxResetCustomer extends Command
             return Command::SUCCESS;
         }
 
-        // Paddle first, outside the DB transaction: if this fails we bail with the portal
-        // record still intact, rather than deleting it and leaving Paddle still billing the card.
+        // Paddle first, outside the DB transaction — but unlike company:purge (real customers,
+        // real money, a failed cancel aborts the whole thing), this warns and deletes the portal
+        // record anyway: it's always a sandbox subscription (the environment guard above already
+        // ensures that), so the worst case of a cancel failing here is a harmless orphaned test
+        // subscription sitting in Paddle's sandbox — not worth blocking a fast test-retest loop over.
         foreach ($subsToCancel as $deal) {
             try {
                 $paddle->cancelSubscription($deal->paddle_subscription_id, immediately: true);
                 $this->info("Cancelled Paddle subscription {$deal->paddle_subscription_id}.");
             } catch (\Throwable $e) {
-                $this->warn("Could not cancel {$deal->paddle_subscription_id} in Paddle (continuing anyway): {$e->getMessage()}");
+                $this->warn("Could not cancel {$deal->paddle_subscription_id} in Paddle (continuing anyway — it's sandbox, so this is just leftover clutter there, not a billing risk): {$e->getMessage()}");
             }
         }
 
