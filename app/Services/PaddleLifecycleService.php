@@ -1367,14 +1367,92 @@ class PaddleLifecycleService
     }
 
     /**
+     * A different failure mode than alertOnFailedWebhookDeliveries(): something in front of
+     * this app — a hosting firewall, a WAF, a captive portal — can intercept a webhook request
+     * and answer with its own 2xx before Laravel ever sees it. Paddle then marks the
+     * notification "delivered" and never retries, so the failed-delivery check above never
+     * catches it (found 2026-09-29: a hosting firewall on the live server blocked one of
+     * Paddle's own published IPs mid-burst and answered with its own block page; Paddle's log
+     * for that notification showed status "delivered", response_code 200 — see PROJECT.md).
+     * The only reliable tell is the response BODY: PaddleWebhookController::handle() always
+     * returns the literal string "OK", even when an event fails to process (deliberately, so
+     * Paddle doesn't retry a delivery that genuinely reached this app) — so any 2xx delivery
+     * whose logged body isn't exactly "OK" was answered by something else.
+     *
+     * Only checks notifications NOT already `status: failed` — a non-2xx is already
+     * alertOnFailedWebhookDeliveries()'s job, and flagging it again here under a different
+     * name would just double the noise for the same underlying delivery.
+     *
+     * One email per distinct hijacked delivery, same Cache-dedup shape as the sibling check —
+     * except a notification with no delivery attempt logged yet is left UNmarked so it's
+     * re-examined next run, rather than assumed clean.
+     *
+     * @return int how many newly-seen hijacked deliveries triggered this alert
+     */
+    protected function alertOnHijackedWebhookDeliveries(): int
+    {
+        $recent = collect($this->paddle->listRecentNotifications())
+            ->filter(fn (array $n) => isset($n['occurred_at']) && Carbon::parse($n['occurred_at'])->gt(now()->subHours(2)))
+            ->filter(fn (array $n) => ($n['status'] ?? null) !== 'failed')
+            ->reject(fn (array $n) => Cache::has("paddle_notification_body_checked:{$n['id']}"));
+
+        $hijacked = collect();
+
+        foreach ($recent as $n) {
+            $lastAttempt = collect($this->paddle->getNotificationLogs($n['id']))
+                ->sortByDesc(fn (array $log) => $log['attempted_at'] ?? '')
+                ->first();
+
+            if (!$lastAttempt) {
+                continue; // No attempt logged yet — leave unmarked, check again next run.
+            }
+
+            Cache::put("paddle_notification_body_checked:{$n['id']}", true, now()->addDay());
+
+            $code = $lastAttempt['response_code'] ?? 0;
+            $isHijacked = $code >= 200 && $code < 300 && trim((string) ($lastAttempt['response_body'] ?? '')) !== 'OK';
+
+            if ($isHijacked) {
+                $hijacked->push($n);
+            }
+        }
+
+        if ($hijacked->isEmpty()) {
+            return 0;
+        }
+
+        $eventTypes = $hijacked->pluck('type')->filter()->unique()->values();
+
+        $this->auditService->logAction('paddle_webhook_delivery_hijacked', null, [
+            'count' => $hijacked->count(),
+            'event_types' => $eventTypes->all(),
+            'notification_ids' => $hijacked->pluck('id')->values()->all(),
+        ]);
+
+        $this->emailService->notifyAdmins(
+            type: 'admin_webhook_delivery_hijacked',
+            subject: 'Something other than the portal answered a Paddle webhook',
+            headline: "Paddle marked {$hijacked->count()} recent webhook event(s) as delivered, but the response didn't come from this app",
+            intro: 'Paddle called this portal\'s webhook endpoint and got a 200 OK back, so it will not retry — but the response body was not the plain "OK" this app always sends, meaning something in front of it (a hosting firewall, a WAF, a captive portal) answered on its behalf and the request never actually reached the app. paddle:reconcile fills in payments and subscription status on its own 15-minute poll regardless, but refunds and chargebacks have no such fallback and will silently never appear here until whatever intercepted these requests is fixed — check the hosting firewall/WAF for a blocked IP in Paddle\'s published webhook range.',
+            facts: [
+                'Hijacked events' => (string) $hijacked->count(),
+                'Event types' => $eventTypes->implode(', '),
+            ],
+            tone: 'danger'
+        );
+
+        return $hijacked->count();
+    }
+
+    /**
      * The safety net: ask Paddle what actually happened and apply anything the webhooks didn't
      * deliver. Every step is the same idempotent code the webhooks use.
      *
-     * @return array{deals_paid: int, synced: int, charges: int, overdue: int, failed_deliveries: int, errors: int}
+     * @return array{deals_paid: int, synced: int, charges: int, overdue: int, failed_deliveries: int, hijacked_deliveries: int, errors: int}
      */
     public function reconcile(): array
     {
-        $stats = ['deals_paid' => 0, 'synced' => 0, 'charges' => 0, 'overdue' => 0, 'failed_deliveries' => 0, 'errors' => 0];
+        $stats = ['deals_paid' => 0, 'synced' => 0, 'charges' => 0, 'overdue' => 0, 'failed_deliveries' => 0, 'hijacked_deliveries' => 0, 'errors' => 0];
 
         // Deliberately first and isolated: this checks whether the webhook PIPE itself is
         // healthy, which is a different question from "did we process every deal below" — a
@@ -1383,6 +1461,12 @@ class PaddleLifecycleService
             $stats['failed_deliveries'] = $this->alertOnFailedWebhookDeliveries();
         } catch (\Throwable $e) {
             Log::warning("paddle:reconcile — webhook health check failed: {$e->getMessage()}");
+        }
+
+        try {
+            $stats['hijacked_deliveries'] = $this->alertOnHijackedWebhookDeliveries();
+        } catch (\Throwable $e) {
+            Log::warning("paddle:reconcile — webhook hijack check failed: {$e->getMessage()}");
         }
 
         // Unpaid deals whose transaction Paddle may have completed (a missed transaction.completed

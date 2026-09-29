@@ -24,12 +24,13 @@ class ReconcilePaddle extends Command
         $stats = $lifecycle->reconcile();
 
         $this->info(sprintf(
-            'Paddle reconcile: %d deal(s) newly paid, %d subscription(s) synced, %d missed charge(s) recorded, %d charge(s) overdue, %d failed-delivery alert(s), %d error(s).',
+            'Paddle reconcile: %d deal(s) newly paid, %d subscription(s) synced, %d missed charge(s) recorded, %d charge(s) overdue, %d failed-delivery alert(s), %d hijacked-delivery alert(s), %d error(s).',
             $stats['deals_paid'],
             $stats['synced'],
             $stats['charges'],
             $stats['overdue'],
             $stats['failed_deliveries'],
+            $stats['hijacked_deliveries'],
             $stats['errors']
         ));
 

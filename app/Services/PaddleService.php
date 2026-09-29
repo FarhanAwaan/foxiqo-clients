@@ -227,6 +227,29 @@ class PaddleService
         ], 'Failed to list Paddle notifications')['data'] ?? [];
     }
 
+    /**
+     * Recent webhook deliveries regardless of status — unlike listFailedNotifications(), this
+     * also includes ones Paddle considers successfully "delivered". Needed because something
+     * sitting in front of this app (a hosting firewall, a WAF) can answer a webhook request
+     * with its own 2xx before the request ever reaches Laravel; Paddle has no way to tell that
+     * apart from a real success, so a hijacked delivery never shows up as "failed" — the only
+     * way to catch it is to inspect what was actually in the response, via getNotificationLogs().
+     */
+    public function listRecentNotifications(int $limit = 50): array
+    {
+        return $this->request('GET', '/notifications', [
+            'per_page' => $limit,
+        ], 'Failed to list Paddle notifications')['data'] ?? [];
+    }
+
+    /**
+     * The delivery attempts Paddle made for one notification — response code/body per attempt.
+     */
+    public function getNotificationLogs(string $notificationId): array
+    {
+        return $this->request('GET', "/notifications/{$notificationId}/logs", null, 'Failed to fetch Paddle notification logs')['data'] ?? [];
+    }
+
     // ──────────────────────────────────────────────
     // Subscriptions — read + the admin lifecycle actions
     // ──────────────────────────────────────────────
